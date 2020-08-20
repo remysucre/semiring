@@ -174,7 +174,9 @@ fn rules() -> Vec<Rewrite<Lambda, BindAnalysis>> {
         rw!("id-52"; "(* (I (= ?j ?t)) (I (<= ?j ?t)))" => "(I (= ?j ?t))"),
     ]);
     rs.extend(vec![
-        rw!("S-def"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
+        rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
+        rw!("S-def-running-total"; "(sum ?j (sum ?w (* (* (rel R ?t ?j ?w) ?w) (* (I (<= (lit 1) ?j)) (I (<= ?j ?t))))))" => "
+(rel S ?t)"),
     ]);
     rs
 }
@@ -255,25 +257,25 @@ egg::test_fn! {
                 (* (I (< (var j) (var t))) (I (> (var t) (lit 1))))))
           (* (var w) (* (I (<= (lit 1) (var j))) (I (<= (var j) (var t))))))))"
     =>
-    "(+ (sum (var j) (sum (var w)
-           (* (* (rel v (var j) (var w)) (I (= (var t) (var j))))
-              (* (var w)
-                 (* (I (<= (lit 1) (var j)))
-                    (I (<= (var j) (var t))))))))
-        (sum (var j) (sum (var w)
-           (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
-                 (* (I (< (var j) (var t)))
-                    (I (> (var t) (lit 1)))))
-              (* (var w)
-                 (* (I (<= (lit 1) (var j)))
-                    (I (<= (var j) (var t)))))))))"
     //"(+ (sum (var j) (sum (var w)
-    //       (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
-    //          (* (var w) (I (<= (lit 1) (var j)))))))
+    //       (* (* (rel v (var j) (var w)) (I (= (var t) (var j))))
+    //          (* (var w)
+    //             (* (I (<= (lit 1) (var j)))
+    //                (I (<= (var j) (var t))))))))
     //    (sum (var j) (sum (var w)
     //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
     //             (* (I (< (var j) (var t)))
     //                (I (> (var t) (lit 1)))))
-    //          (* (var w) (I (<= (lit 1) (var j))))))))"
-    //,
+    //          (* (var w)
+    //             (* (I (<= (lit 1) (var j)))
+    //                (I (<= (var j) (var t)))))))))"
+    "(+ (sum (var j) (sum (var w)
+           (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
+              (* (var w) (I (<= (lit 1) (var j)))))))
+        (sum (var j) (sum (var w)
+           (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
+                 (* (I (< (var j) (var t)))
+                    (I (> (var t) (lit 1)))))
+              (* (var w) (I (<= (lit 1) (var j))))))))"
+    ,
 }
