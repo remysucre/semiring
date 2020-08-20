@@ -2,7 +2,7 @@ use egg::{rewrite as rw, *};
 use std::collections::HashSet;
 
 define_language! {
-    enum Lambda {
+    enum Semiring {
         Num(i32),
         "lit" = Lit(Id),
         "var" = Var(Id),
@@ -29,7 +29,7 @@ define_language! {
     }
 }
 
-type EGraph = egg::EGraph<Lambda, BindAnalysis>;
+type EGraph = egg::EGraph<Semiring, BindAnalysis>;
 
 #[derive(Default, Clone)]
 struct BindAnalysis;
@@ -39,7 +39,7 @@ struct Data {
     free: HashSet<Id>,
 }
 
-impl Analysis<Lambda> for BindAnalysis {
+impl Analysis<Semiring> for BindAnalysis {
     type Data = Data;
     fn merge(&self, to: &mut Data, from: Data) -> bool {
         let before_len = to.free.len();
@@ -47,19 +47,19 @@ impl Analysis<Lambda> for BindAnalysis {
         before_len != to.free.len()
     }
 
-    fn make(egraph: &EGraph, enode: &Lambda) -> Data {
+    fn make(egraph: &EGraph, enode: &Semiring) -> Data {
         let f = |i: &Id| egraph[*i].data.free.iter().cloned();
         let mut free = HashSet::default();
         match enode {
-            Lambda::Var(v) => {
+            Semiring::Var(v) => {
                 free.insert(*v);
             }
-            Lambda::Let([v, a, b]) => {
+            Semiring::Let([v, a, b]) => {
                 free.extend(f(b));
                 free.remove(v);
                 free.extend(f(a));
             }
-            Lambda::Sum([v, a]) => {
+            Semiring::Sum([v, a]) => {
                 free.extend(f(a));
                 free.remove(v);
             }
@@ -75,18 +75,18 @@ struct CaptureAvoid {
     fresh: Var,
     v2: Var,
     e: Var,
-    if_not_free: Pattern<Lambda>,
-    if_free: Pattern<Lambda>,
+    if_not_free: Pattern<Semiring>,
+    if_free: Pattern<Semiring>,
 }
 
-impl Applier<Lambda, BindAnalysis> for CaptureAvoid {
+impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let e = subst[self.e];
         let v2 = subst[self.v2];
         let v2_free_in_e = egraph[e].data.free.contains(&v2);
         if v2_free_in_e {
             let mut subst = subst.clone();
-            let sym = Lambda::Symbol(format!("_{}", eclass).into());
+            let sym = Semiring::Symbol(format!("_{}", eclass).into());
             subst.insert(self.fresh, egraph.add(sym));
             self.if_free.apply_one(egraph, eclass, &subst)
         } else {
@@ -97,13 +97,13 @@ impl Applier<Lambda, BindAnalysis> for CaptureAvoid {
 
 struct RenameSum {
     fresh: Var,
-    e: Pattern<Lambda>,
+    e: Pattern<Semiring>,
 }
 
-impl Applier<Lambda, BindAnalysis> for RenameSum {
+impl Applier<Semiring, BindAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
-        let sym = Lambda::Symbol(format!("_{}", eclass).into());
+        let sym = Semiring::Symbol(format!("_{}", eclass).into());
         subst.insert(self.fresh, egraph.add(sym));
         self.e.apply_one(egraph, eclass, &subst)
     }
@@ -127,7 +127,7 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[(subst[b])].data.free.contains(&subst[x])
 }
 
-fn rules() -> Vec<Rewrite<Lambda, BindAnalysis>> {
+fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     let mut rs = vec![
         // subst rules
         rw!("let-add";  "(let ?v ?e (+   ?a ?b))" => "(+   (let ?v ?e ?a) (let ?v ?e ?b))"),
