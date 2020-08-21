@@ -187,8 +187,15 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     ]);
     rs.extend(vec![
         //rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
-        rw!("S-def-running-total"; "(sum ?j (sum ?w (* (* (rel R ?t ?j ?w) ?w) (* (I (<= (lit 1) ?j)) (I (<= ?j ?t))))))" <=> "
-(rel S ?t)"),
+        rw!(
+            "S-def-running-total";
+            "(sum (var j) (sum (var w)
+                (* (* (rel R ?t (var j) (var w)) (var w))
+                   (* (I (<= (lit 1) (var j)))
+                      (I (<= (var j) ?t))))))"
+                <=>
+                "(rel S ?t)"
+        ),
     ].concat());
     rs
 }
