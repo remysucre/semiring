@@ -32,11 +32,14 @@ define_language! {
 pub type EGraph = egg::EGraph<Semiring, BindAnalysis>;
 
 #[derive(Default, Clone)]
-pub struct BindAnalysis;
+pub struct BindAnalysis {
+    pub found: bool,
+}
 
 #[derive(Debug)]
 pub struct Data {
     free: HashSet<Id>,
+    pub found: bool,
 }
 
 impl Analysis<Semiring> for BindAnalysis {
@@ -44,6 +47,7 @@ impl Analysis<Semiring> for BindAnalysis {
     fn merge(&self, to: &mut Data, from: Data) -> bool {
         let before_len = to.free.len();
         to.free.retain(|i| from.free.contains(i));
+        to.found = from.found || to.found;
         before_len != to.free.len()
     }
 
@@ -65,7 +69,7 @@ impl Analysis<Semiring> for BindAnalysis {
             }
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
-        Data { free }
+        Data { free, found: egraph.analysis.found }
     }
 
     fn modify(_egraph: &mut EGraph, _id: Id) {}
