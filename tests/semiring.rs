@@ -97,12 +97,19 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
 
 struct RenameSum {
     fresh: Var,
+    //a: Var,
+    //b: Var,
+    //x: Var,
     e: Pattern<Semiring>,
 }
 
 impl Applier<Semiring, BindAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
+        //let a = subst[self.a];
+        //let b = subst[self.b];
+        //let x = subst[self.x];
+        //let sym = Semiring::Symbol(format!("_{}_{}_{}", a, b, x).into());
         let sym = Semiring::Symbol(format!("_{}", eclass).into());
         subst.insert(self.fresh, egraph.add(sym));
         self.e.apply_one(egraph, eclass, &subst)
@@ -129,18 +136,19 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
 
 fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     let mut rs = vec![
-        // subst rules
-        rw!("let-add";  "(let ?v ?e (+   ?a ?b))" => "(+   (let ?v ?e ?a) (let ?v ?e ?b))"),
-        rw!("let-eq";   "(let ?v ?e (=   ?a ?b))" => "(=   (let ?v ?e ?a) (let ?v ?e ?b))"),
         rw!("let-lit"; "(let ?v1 ?e (lit ?n))" => "(lit ?n)"),
         rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
         rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
+        // NOTE can be generating a bunch of stuff here
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" =>
             { RenameSum {
                 fresh: var("?fresh"),
+                //a: var("?a"),
+                //b: var("?b"),
+                //x: var("?x"),
                 e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
@@ -155,6 +163,9 @@ fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             if is_not_same_var(var("?v1"), var("?v2"))),
     ];
     rs.extend(vec![
+        // subst rules
+        rw!("let-add";  "(let ?v ?e (+   ?a ?b))" <=> "(+   (let ?v ?e ?a) (let ?v ?e ?b))"),
+        rw!("let-eq";   "(let ?v ?e (=   ?a ?b))" <=> "(=   (let ?v ?e ?a) (let ?v ?e ?b))"),
         // open term rules
         rw!("add-comm";  "(+ ?a ?b)"        <=> "(+ ?b ?a)"),
         rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
@@ -238,7 +249,8 @@ egg::test_fn! {
     runner = Runner::default()
         .with_time_limit(std::time::Duration::from_secs(20))
         .with_node_limit(100_000)
-        .with_iter_limit(60),
+        .with_iter_limit(100)
+        .with_scheduler(BackoffScheduler::default().with_initial_match_limit(500)),
     "(sum (var j) (sum (var w)
        (* (+ (* (rel v (var j) (var w)) (I (= (var t) (var j))))
              (* (rel R (- (var t) (lit 1)) (var j) (var w))
@@ -277,5 +289,5 @@ egg::test_fn! {
            (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
               (* (var w) (I (<= (lit 1) (var j)))))))
         (* (I (> (var t) (lit 1))) (rel S (- (var ?t) (lit 1)))))"
-    ,
+    @check |r: Runner<Semiring, BindAnalysis>| r.print_report()
 }
