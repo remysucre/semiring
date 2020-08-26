@@ -58,7 +58,10 @@ egg::test_fn! {
         .with_time_limit(std::time::Duration::from_secs(20))
         .with_node_limit(100_000)
         .with_iter_limit(100)
-        .with_scheduler(BackoffScheduler::default().with_initial_match_limit(500)),
+        .with_scheduler(
+            BackoffScheduler::default()
+                .with_initial_match_limit(500)
+        ),
     "(sum (var j) (sum (var w)
        (* (+ (* (rel v (var j) (var w)) (I (= (var t) (var j))))
              (* (rel R (- (var t) (lit 1)) (var j) (var w))

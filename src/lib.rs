@@ -194,9 +194,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!(
             "S-def-running-total";
             "(sum (var j) (sum (var w)
-                (* (* (rel R ?t (var j) (var w)) (var w))
-                   (* (I (<= (lit 1) (var j)))
-                      (I (<= (var j) ?t))))))"
+               (* (* (rel R ?t (var j) (var w)) (var w))
+                  (* (I (<= (lit 1) (var j)))
+                     (I (<= (var j) ?t))))))"
                 <=>
                 "(rel S ?t)"
         ),
