@@ -75,6 +75,8 @@ impl Analysis<Semiring> for BindAnalysis {
     fn modify(_egraph: &mut EGraph, _id: Id) {}
 }
 
+pub struct Found;
+
 pub struct CaptureAvoid {
     fresh: Var,
     v2: Var,
@@ -105,6 +107,12 @@ pub struct RenameSum {
     //b: Var,
     //x: Var,
     e: Pattern<Semiring>,
+}
+
+impl Applier<Semiring, BindAnalysis> for Found {
+    fn apply_one(&self, _egraph: &mut EGraph,_eclass: Id, _subst: &Subst) -> Vec<Id> {
+        panic!("Found solution")
+    }
 }
 
 impl Applier<Semiring, BindAnalysis> for RenameSum {
@@ -175,6 +183,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
         rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
         rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
+        rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* (lit -1) ?b))"),
         rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
         rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
         rw!("add-sum-dist"; "(sum (var ?x) (+ ?a ?b))" <=> "(+ (sum (var ?x) ?a) (sum (var ?x) ?b))"),
@@ -191,15 +200,21 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     ]);
     rs.extend(vec![
         //rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
-        rw!(
-            "S-def-running-total";
+        //rw!(
+        //    "S-def-running-total";
+        //    "(sum (var j) (sum (var w)
+        //       (* (* (rel R ?t (var j) (var w)) (var w))
+        //          (* (I (<= (lit 1) (var j)))
+        //             (I (<= (var j) ?t))))))"
+        //        =>
+        //        "(rel S ?t)"
+        //),
+        rw!("S-answer-sliding-window";
             "(sum (var j) (sum (var w)
-               (* (* (rel R ?t (var j) (var w)) (var w))
-                  (* (I (<= (lit 1) (var j)))
-                     (I (<= (var j) ?t))))))"
-                <=>
-                "(rel S ?t)"
-        ),
-    ].concat());
+               (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
+                  (* (I (<= (- (- (var t) (lit 1)) (var k)) (var j)))
+                     (I (<= (var j) (- (var t) (lit 1))))))))" => Found
+        )
+    ]);
     rs
 }
