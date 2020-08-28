@@ -170,5 +170,5 @@ egg::test_fn! {
     "(* (var a) (+ (var b) (var c)))"
         =>
         "(+ (* (var a) (var b)) (* (var a) (var c)))"
-        @check |r: Runner<Semiring, BindAnalysis>| { r.egraph.dot().to_pdf("~/normalized.pdf"); }
+        @check |r: Runner<Semiring, BindAnalysis>| { r.egraph.dot().to_pdf("normalized.pdf").unwrap(); }
 }
