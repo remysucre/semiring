@@ -101,12 +101,23 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
     }
 }
 
+pub struct Destroy {
+    e: Pattern<Semiring>
+}
+
 pub struct RenameSum {
     fresh: Var,
     //a: Var,
     //b: Var,
     //x: Var,
     e: Pattern<Semiring>,
+}
+
+impl Applier<Semiring, BindAnalysis> for Destroy {
+    fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
+        egraph[eclass].nodes.clear();
+        self.e.apply_one(egraph, eclass, subst)
+    }
 }
 
 impl Applier<Semiring, BindAnalysis> for Found {
@@ -232,5 +243,12 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         //             (I (<= (var j) (- (var t) (lit 1))))))))" => Found
         //)
     ]);
+    rs
+}
+
+pub fn normalizing_rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+    let rs = vec![
+        rw!("push-mul"; "(* ?a (+ ?b ?c))" => {Destroy { e: "(+ (* ?a ?b) (* ?a ?c))".parse().unwrap() }})
+    ];
     rs
 }
