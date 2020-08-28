@@ -194,9 +194,10 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("trivial-id"; "(sum ?w (* (I (= ?x ?w)) ?w))" => "?x"),
     ]);
     rs.extend(vec![
-        rw!("id-51"; "(* (I (< ?j ?t)) (I (<= ?j ?t)))" => "(I (< ?j ?t))"),
-        rw!("id-52"; "(* (I (= ?j ?t)) (I (<= ?j ?t)))" => "(I (= ?j ?t))"),
-        rw!("id-53"; "(I (< ?j ?t))" => "(I (<= ?j (- ?t (lit 1))))"),
+        //rw!("id-51"; "(* (I (< ?j ?t)) (I (<= ?j ?t)))" => "(I (< ?j ?t))"),
+        //rw!("id-52"; "(* (I (= ?j ?t)) (I (<= ?j ?t)))" => "(I (= ?j ?t))"),
+        //rw!("id-53"; "(I (< ?j ?t))" => "(I (<= ?j (- ?t (lit 1))))"),
+        //rw!("id-99"; "(I (<= ?a ?b))" => "(- (I (<= (- ?a (lit 1)) ?b)) (I (= (- ?a (lit 1)) ?b)))"),
     ]);
     rs.extend(vec![
         //rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
@@ -212,9 +213,15 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("S-answer-sliding-window";
             "(sum (var j) (sum (var w)
                (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
-                  (* (I (<= (- (- (var t) (lit 1)) (var k)) (var j)))
-                     (I (<= (var j) (- (var t) (lit 1))))))))" => Found
+                  (* (I (<= (- (var t) (var k)) (var j)))
+                     (I (< (var j) (var t)))))))" => Found
         )
+        //rw!("S-answer-sliding-window";
+        //    "(sum (var j) (sum (var w)
+        //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
+        //          (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
+        //             (I (<= (var j) (- (var t) (lit 1))))))))" => Found
+        //)
     ]);
     rs
 }
