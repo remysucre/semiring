@@ -167,8 +167,8 @@ use semiring::*;
 egg::test_fn! {
     normalize, normalizing_rules(),
     runner = Runner::default(),
-    "(* (var a) (+ (var b) (var c)))"
+    "(+ (+ (var a) (lit 0)) (var a))"
         =>
-        "(+ (* (var a) (var b)) (* (var a) (var c)))"
+        "(+ (var a) (var a))"
         @check |r: Runner<Semiring, BindAnalysis>| { r.egraph.dot().to_pdf("normalized.pdf").unwrap(); }
 }

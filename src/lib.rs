@@ -248,7 +248,10 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
 
 pub fn normalizing_rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     let rs = vec![
-        rw!("push-mul"; "(* ?a (+ ?b ?c))" => {Destroy { e: "(+ (* ?a ?b) (* ?a ?c))".parse().unwrap() }})
+        // rw!("push-mul"; "(* ?a (+ ?b ?c))" => {Destroy { e: "(+ (* ?a ?b) (* ?a ?c))".parse().unwrap() }})
+        rw!("zach"; "(var a)" => {Destroy { e: "(+ (var a) (lit 0))".parse().unwrap() }}),
+        // rw!("zach"; "?a" => {Destroy { e: "(+ ?a (lit 0))".parse().unwrap() }}),
+        rw!("found"; "(+ (var a) (var a))" => Found)
     ];
     rs
 }
