@@ -106,8 +106,8 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
     }
 }
 
-pub struct Destroy {
-    e: Pattern<Semiring>,
+pub struct Destroy<A: Applier<Semiring, BindAnalysis>> {
+    e: A,
 }
 
 pub struct RenameSum {
@@ -115,7 +115,7 @@ pub struct RenameSum {
     e: Pattern<Semiring>,
 }
 
-impl Applier<Semiring, BindAnalysis> for Destroy {
+impl<A: Applier<Semiring, BindAnalysis>> Applier<Semiring, BindAnalysis> for Destroy<A> {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         egraph[eclass].nodes.clear();
         self.e.apply_one(egraph, eclass, subst)
@@ -199,6 +199,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     rs
 }
 
+// one way destructive rewrite
 fn rw_1(
     name: &'static str,
     lhs: &'static str,
@@ -208,16 +209,62 @@ fn rw_1(
         name,
         lhs.parse::<Pattern<Semiring>>().unwrap(),
         Destroy {
-            e: rhs.parse().unwrap(),
+            e: rhs.parse::<Pattern<Semiring>>().unwrap(),
         },
     )
     .unwrap()
 }
 
 pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
-    vec![rw_1(
-        "push-mul",
-        "(* ?a (+ ?b ?c))",
-        "(+ (* ?a ?b) (* ?a ?c))",
-    )]
+    vec![
+        rw_1(
+            "pushdown-mul",
+            "(* ?a (+ ?b ?c))",
+            "(+ (* ?a ?b) (* ?a ?c))",
+        ),
+        rw_1(
+            "pushdown-sum-add",
+            "(sum ?i (+ ?a ?b))",
+            "(+ (sum ?i ?a) (sum ?i ?b))",
+        ),
+        rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" => {
+            Destroy { e: "(sum ?x (* ?b ?a))".parse::<Pattern<Semiring>>().unwrap() }
+        } if not_free(var("?x"), var("?b"))),
+        rw!("pushdown-sum-free";
+            "(* ?b (sum ?x ?a))" =>
+            { Destroy { e: RenameSum {
+                fresh: var("?fresh"),
+                e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
+            }}}
+            if free(var("?x"), var("?b"))),
+        rw_1("let-lit", "(let ?v1 ?e (lit ?n))", "(lit ?n)"),
+        rw_1("let-var-same", "(let ?v1 ?e (var ?v1))", "?e"),
+        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" =>
+            { Destroy { e: "(var ?v2)".parse::<Pattern<Semiring>>().unwrap() }}
+            if is_not_same_var(var("?v1"), var("?v2"))),
+        rw_1(
+            "let-sum-same",
+            "(let ?v1 ?e (sum ?v1 ?body))",
+            "(sum ?v1 ?body)",
+        ),
+        rw!("let-sum-diff";
+            "(let ?v1 ?e (sum ?v2 ?body))" =>
+            { Destroy { e: { CaptureAvoid {
+                fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
+                if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+            }}}}
+            if is_not_same_var(var("?v1"), var("?v2"))),
+        rw_1(
+            "let-add",
+            "(let ?v ?e (+ ?a ?b))",
+            "(+ (let ?v ?e ?a) (let ?v ?e ?b))",
+        ),
+        rw_1(
+            "let-eq",
+            "(let ?v ?e (= ?a ?b))",
+            "(= (let ?v ?e ?a) (let ?v ?e ?b))",
+        ),
+        rw_1("subtract", "(- ?a ?b)", "(+ ?a (* (lit -1) ?b))"),
+    ]
 }
