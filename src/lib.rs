@@ -75,7 +75,7 @@ impl Analysis<Semiring> for BindAnalysis {
     fn modify(_egraph: &mut EGraph, _id: Id) {}
 }
 
-pub struct Found;
+pub struct Found {msg: &'static str}
 
 pub struct CaptureAvoid {
     fresh: Var,
@@ -122,7 +122,7 @@ impl Applier<Semiring, BindAnalysis> for Destroy {
 
 impl Applier<Semiring, BindAnalysis> for Found {
     fn apply_one(&self, _egraph: &mut EGraph,_eclass: Id, _subst: &Subst) -> Vec<Id> {
-        panic!("Found solution")
+        panic!("Found {}", self.msg)
     }
 }
 
@@ -208,7 +208,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         //rw!("id-51"; "(* (I (< ?j ?t)) (I (<= ?j ?t)))" => "(I (< ?j ?t))"),
         //rw!("id-52"; "(* (I (= ?j ?t)) (I (<= ?j ?t)))" => "(I (= ?j ?t))"),
         //rw!("id-53"; "(I (< ?j ?t))" => "(I (<= ?j (- ?t (lit 1))))"),
-        rw!("id-99"; "(I (<= ?a ?b))" => "(- (I (<= (- ?a (lit 1)) ?b)) (I (= (- ?a (lit 1)) ?b)))"),
+        rw!("id-99"; "(I (<= ?a ?b))" => "(+ (I (<= (- ?a (lit 1)) ?b)) (* (I (= (- ?a (lit 1)) ?b)) (lit 1)))"),
     ]);
     rs.extend(vec![
         //rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
@@ -225,33 +225,29 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(sum (var j) (sum (var w)
                (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
                   (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-                     (I (< (var j) (var t)))))))" => Found
+                     (I (< (var j) (var t)))))))" => { Found {msg: "answer"} }
         ),
         rw!("check-body";
             "(* (var w)
                   (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-                     (I (< (var j) (var t)))))" => Found
+                     (I (< (var j) (var t)))))" => { Found {msg: "body"} }
         ),
+        //rw!("check-ac";
+        //    "(* (var w)
+        //        (* (I (<= (- (var t) (var k)) (var j)))
+        //           (I (< (var j) (var t)))))" => { Found {msg: "ac"} }
+        //),
         rw!("check-id-99";
-            "(* (var w) (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-                     (I (< (var j) (var t)))))" => Found
+            "(* (var w)
+                (* (+ (I (<= (- (- (var t) (var k)) (lit 1)) (var j))) (* (I (= (- (- (var t) (var k)) (lit 1)) (var j))) (lit 1)))
+                   (I (< (var j) (var t)))))" => { Found {msg: "id-99"} }
         ),
         //rw!("S-answer-sliding-window";
         //    "(sum (var j) (sum (var w)
         //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
         //          (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-        //             (I (<= (var j) (- (var t) (lit 1))))))))" => Found
+        //             (I (<= (var j) (- (var t) (lit 1))))))))" => { Found {"answer"} }
         //)
     ]);
-    rs
-}
-
-pub fn normalizing_rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
-    let rs = vec![
-        // rw!("push-mul"; "(* ?a (+ ?b ?c))" => {Destroy { e: "(+ (* ?a ?b) (* ?a ?c))".parse().unwrap() }})
-        rw!("zach"; "(var a)" => {Destroy { e: "(+ (var a) (lit 0))".parse().unwrap() }}),
-        // rw!("zach"; "?a" => {Destroy { e: "(+ ?a (lit 0))".parse().unwrap() }}),
-        rw!("found"; "(+ (var a) (var a))" => Found)
-    ];
     rs
 }

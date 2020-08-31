@@ -103,72 +103,62 @@ use semiring::*;
 //    @check |r: Runner<Semiring, BindAnalysis>| r.print_report()
 //}
 
-//egg::test_fn! {
-//    sliding_window, rules(),
-//    runner = Runner::default()
-//        .with_time_limit(std::time::Duration::from_secs(60))
-//        .with_node_limit(100_000)
-//        .with_iter_limit(1000)
-//        .with_scheduler(
-//            BackoffScheduler::default()
-//
-//                //.with_initial_match_limit(50)
-//                .ban_rule_with_limit(1, "id-51")
-//                .ban_rule_with_limit(1, "id-52")
-//                .ban_rule_with_limit(1, "id-53")
-//                .ban_rule_with_limit(1, "id-99")
-//                //.ban_rule_with_length(60, "id-99")
-//        )
-//        ,
-//    "(sum (var j)
-//        (sum (var w)
-//           (* (+ (* (rel v (var j) (var w)) (I (= (var t) (var j))))
-//                 (* (rel R (- (var t) (lit 1)) (var j) (var w))
-//                    (* (I (< (var j) (var t)))
-//                       (I (> (var t) (lit 1))))))
-//              (* (var w)
-//                (* (I (<= (- (var t) (var k)) (var j)))
-//                   (I (<= (var j) (var t))))))))"
-//    //"(* (I (<= (- (var t) (var k)) (var j)))
-//    //                (I (<= (var j) (var t))))"
-//    =>
-//    //"(+ (sum (var j) (sum (var w)
-//    //       (* (* (rel v (var j) (var w)) (I (= (var t) (var j))))
-//    //          (* (var w)
-//    //             (* (I (<= (lit 1) (var j)))
-//    //                (I (<= (var j) (var t))))))))
-//    //    (sum (var j) (sum (var w)
-//    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
-//    //             (* (I (< (var j) (var t)))
-//    //                (I (> (var t) (lit 1)))))
-//    //          (* (var w)
-//    //             (* (I (<= (lit 1) (var j)))
-//    //                (I (<= (var j) (var t)))))))))"
-//    //"(+ (sum (var j) (sum (var w)
-//    //       (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
-//    //          (* (var w) (I (<= (lit 1) (var j)))))))
-//    //    (sum (var j) (sum (var w)
-//    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
-//    //             (* (I (< (var j) (var t)))
-//    //                (I (> (var t) (lit 1)))))
-//    //          (* (var w) (I (<= (lit 1) (var j))))))))"
-//    //"(+ (sum (var j) (sum (var w)
-//    //       (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
-//    //          (* (var w) (I (<= (lit 1) (var j)))))))
-//    //    (* (I (> (var t) (lit 1)))
-//    //    (sum (var j) (sum (var w)
-//    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
-//    //             (I (<= (var j) (- (var t) (lit 1)))))
-//    //          (* (var w) (I (<= (lit 1) (var j)))))))))"
-//    "(rel S (var t))"
-//    @check |r: Runner<Semiring, BindAnalysis>| r.print_report()
-//}
-
 egg::test_fn! {
-    normalize, normalizing_rules(),
-    runner = Runner::default(),
-    "(+ (+ (var a) (lit 0)) (var a))"
-        =>
-        "(+ (var a) (var a))"
-        @check |r: Runner<Semiring, BindAnalysis>| { r.egraph.dot().to_pdf("normalized.pdf").unwrap(); }
+    sliding_window, rules(),
+    runner = Runner::default()
+        .with_time_limit(std::time::Duration::from_secs(60))
+        .with_node_limit(100_000)
+        .with_iter_limit(100000)
+        .with_scheduler(
+            BackoffScheduler::default()
+                .with_initial_match_limit(50)
+                //.ban_rule_with_limit(1, "id-51")
+                //.ban_rule_with_limit(1, "id-52")
+                //.ban_rule_with_limit(1, "id-53")
+                .ban_rule_with_limit(1, "id-99")
+                //.ban_rule_with_length(10, "id-99")
+        )
+        ,
+    "(sum (var j)
+        (sum (var w)
+           (* (+ (* (rel v (var j) (var w)) (I (= (var t) (var j))))
+                 (* (rel R (- (var t) (lit 1)) (var j) (var w))
+                    (* (I (< (var j) (var t)))
+                       (I (> (var t) (lit 1))))))
+              (* (var w)
+                (* (I (<= (- (var t) (var k)) (var j)))
+                   (I (<= (var j) (var t))))))))"
+    //"(* (I (<= (- (var t) (var k)) (var j)))
+    //                (I (<= (var j) (var t))))"
+    =>
+    //"(+ (sum (var j) (sum (var w)
+    //       (* (* (rel v (var j) (var w)) (I (= (var t) (var j))))
+    //          (* (var w)
+    //             (* (I (<= (lit 1) (var j)))
+    //                (I (<= (var j) (var t))))))))
+    //    (sum (var j) (sum (var w)
+    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
+    //             (* (I (< (var j) (var t)))
+    //                (I (> (var t) (lit 1)))))
+    //          (* (var w)
+    //             (* (I (<= (lit 1) (var j)))
+    //                (I (<= (var j) (var t)))))))))"
+    //"(+ (sum (var j) (sum (var w)
+    //       (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
+    //          (* (var w) (I (<= (lit 1) (var j)))))))
+    //    (sum (var j) (sum (var w)
+    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
+    //             (* (I (< (var j) (var t)))
+    //                (I (> (var t) (lit 1)))))
+    //          (* (var w) (I (<= (lit 1) (var j))))))))"
+    //"(+ (sum (var j) (sum (var w)
+    //       (* (* (rel v (var j) (var w)) (I (= (var j) (var t))))
+    //          (* (var w) (I (<= (lit 1) (var j)))))))
+    //    (* (I (> (var t) (lit 1)))
+    //    (sum (var j) (sum (var w)
+    //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w))
+    //             (I (<= (var j) (- (var t) (lit 1)))))
+    //          (* (var w) (I (<= (lit 1) (var j)))))))))"
+    "(rel S (var t))"
+    @check |r: Runner<Semiring, BindAnalysis>| r.print_report()
 }
