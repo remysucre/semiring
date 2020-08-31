@@ -69,13 +69,18 @@ impl Analysis<Semiring> for BindAnalysis {
             }
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
-        Data { free, found: egraph.analysis.found }
+        Data {
+            free,
+            found: egraph.analysis.found,
+        }
     }
 
     fn modify(_egraph: &mut EGraph, _id: Id) {}
 }
 
-pub struct Found {msg: &'static str}
+pub struct Found {
+    msg: &'static str,
+}
 
 pub struct CaptureAvoid {
     fresh: Var,
@@ -102,14 +107,11 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
 }
 
 pub struct Destroy {
-    e: Pattern<Semiring>
+    e: Pattern<Semiring>,
 }
 
 pub struct RenameSum {
     fresh: Var,
-    //a: Var,
-    //b: Var,
-    //x: Var,
     e: Pattern<Semiring>,
 }
 
@@ -121,7 +123,7 @@ impl Applier<Semiring, BindAnalysis> for Destroy {
 }
 
 impl Applier<Semiring, BindAnalysis> for Found {
-    fn apply_one(&self, _egraph: &mut EGraph,_eclass: Id, _subst: &Subst) -> Vec<Id> {
+    fn apply_one(&self, _egraph: &mut EGraph, _eclass: Id, _subst: &Subst) -> Vec<Id> {
         panic!("Found {}", self.msg)
     }
 }
@@ -129,10 +131,6 @@ impl Applier<Semiring, BindAnalysis> for Found {
 impl Applier<Semiring, BindAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
-        //let a = subst[self.a];
-        //let b = subst[self.b];
-        //let x = subst[self.x];
-        //let sym = Semiring::Symbol(format!("_{}_{}_{}", a, b, x).into());
         let sym = Semiring::Symbol(format!("_{}", eclass).into());
         subst.insert(self.fresh, egraph.add(sym));
         self.e.apply_one(egraph, eclass, &subst)
@@ -169,9 +167,6 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(* ?b (sum ?x ?a))" =>
             { RenameSum {
                 fresh: var("?fresh"),
-                //a: var("?a"),
-                //b: var("?b"),
-                //x: var("?x"),
                 e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
@@ -201,53 +196,28 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))" if not_free(var("?x"), var("?b"))),
 
     ].concat());
-    rs.extend(vec![
-        rw!("trivial-id"; "(sum ?w (* (I (= ?x ?w)) ?w))" => "?x"),
-    ]);
-    rs.extend(vec![
-        //rw!("id-51"; "(* (I (< ?j ?t)) (I (<= ?j ?t)))" => "(I (< ?j ?t))"),
-        //rw!("id-52"; "(* (I (= ?j ?t)) (I (<= ?j ?t)))" => "(I (= ?j ?t))"),
-        //rw!("id-53"; "(I (< ?j ?t))" => "(I (<= ?j (- ?t (lit 1))))"),
-        rw!("id-99"; "(I (<= ?a ?b))" => "(+ (I (<= (- ?a (lit 1)) ?b)) (* (I (= (- ?a (lit 1)) ?b)) (lit 1)))"),
-    ]);
-    rs.extend(vec![
-        //rw!("S-def-APSP"; "(sum ?w1 (* (rel R ?x ?y ?w1) ?w1))" => "(rel S ?x ?y)"),
-        //rw!(
-        //    "S-def-running-total";
-        //    "(sum (var j) (sum (var w)
-        //       (* (* (rel R ?t (var j) (var w)) (var w))
-        //          (* (I (<= (lit 1) (var j)))
-        //             (I (<= (var j) ?t))))))"
-        //        =>
-        //        "(rel S ?t)"
-        //),
-        rw!("S-answer-sliding-window";
-            "(sum (var j) (sum (var w)
-               (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
-                  (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-                     (I (< (var j) (var t)))))))" => { Found {msg: "answer"} }
-        ),
-        rw!("check-body";
-            "(* (var w)
-                  (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-                     (I (< (var j) (var t)))))" => { Found {msg: "body"} }
-        ),
-        //rw!("check-ac";
-        //    "(* (var w)
-        //        (* (I (<= (- (var t) (var k)) (var j)))
-        //           (I (< (var j) (var t)))))" => { Found {msg: "ac"} }
-        //),
-        rw!("check-id-99";
-            "(* (var w)
-                (* (+ (I (<= (- (- (var t) (var k)) (lit 1)) (var j))) (* (I (= (- (- (var t) (var k)) (lit 1)) (var j))) (lit 1)))
-                   (I (< (var j) (var t)))))" => { Found {msg: "id-99"} }
-        ),
-        //rw!("S-answer-sliding-window";
-        //    "(sum (var j) (sum (var w)
-        //       (* (* (rel R (- (var t) (lit 1)) (var j) (var w)) (var w))
-        //          (* (I (<= (- (- (var t) (var k)) (lit 1)) (var j)))
-        //             (I (<= (var j) (- (var t) (lit 1))))))))" => { Found {"answer"} }
-        //)
-    ]);
     rs
+}
+
+fn rw_1(
+    name: &'static str,
+    lhs: &'static str,
+    rhs: &'static str,
+) -> Rewrite<Semiring, BindAnalysis> {
+    Rewrite::new(
+        name,
+        lhs.parse::<Pattern<Semiring>>().unwrap(),
+        Destroy {
+            e: rhs.parse().unwrap(),
+        },
+    )
+    .unwrap()
+}
+
+pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+    vec![rw_1(
+        "push-mul",
+        "(* ?a (+ ?b ?c))",
+        "(+ (* ?a ?b) (* ?a ?c))",
+    )]
 }
