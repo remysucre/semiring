@@ -223,6 +223,11 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(+ (* ?a ?b) (* ?a ?c))",
         ),
         rw_1(
+            "pushdown-mul-2",
+            "(* (+ ?b ?c) ?a)",
+            "(+ (* ?a ?b) (* ?a ?c))",
+        ),
+        rw_1(
             "pushdown-sum-add",
             "(sum ?i (+ ?a ?b))",
             "(+ (sum ?i ?a) (sum ?i ?b))",
