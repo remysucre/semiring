@@ -26,6 +26,8 @@ define_language! {
         "=" = Eq([Id; 2]),
 
         Symbol(egg::Symbol),
+
+        Other(Symbol, Vec<Id>),
     }
 }
 
@@ -190,11 +192,21 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
         rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
         rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* (lit -1) ?b))"),
+        rw!("divide";  "(/ ?a ?b)" <=> "(* ?a (recip ?b))"),
         rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
         rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
         rw!("add-sum-dist"; "(sum (var ?x) (+ ?a ?b))" <=> "(+ (sum (var ?x) ?a) (sum (var ?x) ?b))"),
         rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))" if not_free(var("?x"), var("?b"))),
 
+    ].concat());
+    rs.extend(vec![
+        rw!("sigma-induction";
+            "(* (* (I (E (var v) (var t)))
+                   (I (= (D (var s) (var t)) (+ (D (var s) (var v)) (lit 1)))))
+                (sig (var s) (var v)))"
+            <=>
+            "(* (I (E (var v) (var t))) (sig (var s) (var v) (var t)))"
+        ),
     ].concat());
     rs
 }
