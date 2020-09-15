@@ -181,6 +181,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
                 if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
+        rw!("mul-1"; "(* ?a (lit 1))" => "?a"),
     ];
     rs.extend(vec![
         // subst rules
@@ -192,12 +193,19 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
         rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
         rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* (lit -1) ?b))"),
-        rw!("divide";  "(/ ?a ?b)" <=> "(* ?a (recip ?b))"),
+        // NOTE boom!
+        rw!("div-canon"; "(/ ?a ?b)" <=> "(* ?a (pow ?b -1))"),
         rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
         rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
         rw!("add-sum-dist"; "(sum (var ?x) (+ ?a ?b))" <=> "(+ (sum (var ?x) ?a) (sum (var ?x) ?b))"),
         rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))" if not_free(var("?x"), var("?b"))),
-
+        // NOTE bang!
+        rw!("exp-mul"; "(* (pow ?a ?b) (pow ?a ?c))" <=> "(pow ?a (+ ?b ?c))"),
+        rw!("base-mul"; "(* (pow ?a ?b) (pow ?c ?b))" <=> "(pow (* ?a ?c) ?b)"),
+        // rw!("pow0"; "(pow ?x 0)" => "1"),
+        // rw!("pow1"; "(pow ?x 1)" <=> "?x"),
+        // rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
+        // rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
     ].concat());
     rs.extend(vec![
         rw!("sigma-induction";
@@ -208,6 +216,18 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(* (I (E (var v) (var t))) (sig (var s) (var v) (var t)))"
         ),
     ].concat());
+    rs.extend(vec![
+        rw!("C-definition";
+            "(C ?s ?v)"
+            =>
+            "(sum (var u) (* (I (neq (var u) ?v)) (/ (sig ?s ?v (var u)) (sig ?s (var u)))))"
+        ),
+        rw!("C-inline";
+            "(sum ?t (* (I (neq ?t ?v)) (/ (sig ?s ?v ?t) (sig ?s ?t))))"
+            =>
+            "(C ?s ?v)"
+        ),
+    ]);
     rs
 }
 
