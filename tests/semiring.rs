@@ -15,10 +15,11 @@ test_fn! {
     "(+ (sum (var t)
           (* (I (E (var v) (var t)))
              (/ (sig (var s) (var v) (var t)) (sig (var s) (var t)))))
-        (sum (var t)
-          (* (I (E (var v) (var t)))
-             (* (/ (sig (var s) (var v) (var t)) (sig (var s) (var t)))
-                (C (var s) (var t))))))"
+        (sum (var t) (sum (var u)
+          (* (I (E (var v) (var t))) (* (I (neq (var u) (var t)))
+             (/ (* (sig (var s) (var v) (var t))
+                   (sig (var s) (var t) (var u)))
+                (* (sig (var s) (var t)) (sig (var s) (var u)))))))))"
     // "(+ (sum (var t)
     //       (* (I (E (var v) (var t)))
     //          (/ (sig (var s) (var v) (var t)) (sig (var s) (var t)))))
