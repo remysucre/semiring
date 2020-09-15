@@ -4,7 +4,6 @@ use std::collections::HashSet;
 define_language! {
     pub enum Semiring {
         Num(i32),
-        "lit" = Lit(Id),
         "var" = Var(Id),
 
         "rel" = Rel(Box<[Id]>),
@@ -31,6 +30,15 @@ define_language! {
     }
 }
 
+impl Semiring {
+    fn num(&self) -> Option<i32> {
+        match self {
+            Semiring::Num(n) => Some(*n),
+            _ => None,
+        }
+    }
+}
+
 pub type EGraph = egg::EGraph<Semiring, BindAnalysis>;
 
 #[derive(Default, Clone)]
@@ -42,6 +50,7 @@ pub struct BindAnalysis {
 pub struct Data {
     free: HashSet<Id>,
     pub found: bool,
+    constant: Option<Semiring>,
 }
 
 impl Analysis<Semiring> for BindAnalysis {
@@ -50,7 +59,13 @@ impl Analysis<Semiring> for BindAnalysis {
         let before_len = to.free.len();
         to.free.retain(|i| from.free.contains(i));
         to.found = from.found || to.found;
-        before_len != to.free.len()
+        let did_change = before_len != to.free.len();
+        if to.constant.is_none() && from.constant.is_some() {
+            to.constant = from.constant;
+            true
+        } else {
+            did_change
+        }
     }
 
     fn make(egraph: &EGraph, enode: &Semiring) -> Data {
@@ -71,13 +86,32 @@ impl Analysis<Semiring> for BindAnalysis {
             }
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
+        let constant = eval(egraph, enode);
         Data {
             free,
             found: egraph.analysis.found,
+            constant
         }
     }
 
-    fn modify(_egraph: &mut EGraph, _id: Id) {}
+    fn modify(egraph: &mut EGraph, id: Id)
+    {
+        if let Some(c) = egraph[id].data.constant.clone() {
+            let const_id = egraph.add(c);
+            egraph.union(id, const_id);
+        }
+    }
+}
+
+fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {
+    let x = |i: &Id| egraph[*i].data.constant.clone();
+    match enode {
+        Semiring::Num(_) => Some(enode.clone()),
+        Semiring::Add([a, b]) => Some(Semiring::Num(x(a)?.num()? + x(b)?.num()?)),
+        Semiring::Min([a, b]) => Some(Semiring::Num(x(a)?.num()? - x(b)?.num()?)),
+        Semiring::Mul([a, b]) => Some(Semiring::Num(x(a)?.num()? * x(b)?.num()?)),
+        _ => None,
+    }
 }
 
 pub struct Found {
@@ -159,7 +193,8 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
 
 pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     let mut rs = vec![
-        rw!("let-lit"; "(let ?v1 ?e (lit ?n))" => "(lit ?n)"),
+        rw!("let-const";
+            "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
         rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
         rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
             if is_not_same_var(var("?v1"), var("?v2"))),
@@ -181,7 +216,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
                 if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
-        rw!("mul-1"; "(* ?a (lit 1))" => "?a"),
+        rw!("mul-1"; "(* ?a 1)" => "?a"),
     ];
     rs.extend(vec![
         // subst rules
@@ -192,7 +227,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
         rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
         rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
-        rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* (lit -1) ?b))"),
+        rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
         // NOTE boom!
         rw!("div-canon"; "(/ ?a ?b)" <=> "(* ?a (pow ?b -1))"),
         rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
@@ -210,7 +245,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     rs.extend(vec![
         rw!("sigma-induction";
             "(* (* (I (E (var v) (var t)))
-                   (I (= (D (var s) (var t)) (+ (D (var s) (var v)) (lit 1)))))
+                   (I (= (D (var s) (var t)) (+ (D (var s) (var v)) 1))))
                 (sig (var s) (var v)))"
             <=>
             "(* (I (E (var v) (var t))) (sig (var s) (var v) (var t)))"
@@ -227,8 +262,17 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             =>
             "(C ?s ?v)"
         ),
+        rw!("sig-svt";
+            "(sig ?s ?v ?t)"
+            =>
+            "(* (I (= (D ?s ?t) (+ (D ?s ?v) (D ?v ?t)))) (* (sig ?s ?v) (sig ?v ?t)))"
+        )
     ]);
     rs
+}
+
+fn is_const(v: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
+    move |egraph, _, subst| egraph[subst[v]].data.constant.is_some()
 }
 
 // one way destructive rewrite
@@ -274,7 +318,8 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
                 e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}}
             if free(var("?x"), var("?b"))),
-        rw_1("let-lit", "(let ?v1 ?e (lit ?n))", "(lit ?n)"),
+        // rw_1("let-const", "(let ?v1 ?e ?n))", "?n" if is_const(var("?c"))),
+        rw!("let-const"; "(let ?v1 ?e ?n))" => "?n" if is_const(var("?c"))),
         rw_1("let-var-same", "(let ?v1 ?e (var ?v1))", "?e"),
         rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" =>
             { Destroy { e: "(var ?v2)".parse::<Pattern<Semiring>>().unwrap() }}
@@ -302,6 +347,6 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(let ?v ?e (= ?a ?b))",
             "(= (let ?v ?e ?a) (let ?v ?e ?b))",
         ),
-        rw_1("subtract", "(- ?a ?b)", "(+ ?a (* (lit -1) ?b))"),
+        rw_1("subtract", "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
     ]
 }

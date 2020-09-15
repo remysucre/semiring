@@ -5,7 +5,14 @@ test_fn! {
     betweenness_centrality, rules(),
     runner = Runner::default()
         .with_node_limit(750_000)
-        .with_iter_limit(400),
+        .with_iter_limit(4_000)
+        .with_time_limit(
+            std::time::Duration::from_secs(60)
+        )
+        .with_scheduler(
+            BackoffScheduler::default()
+                .with_initial_match_limit(50)
+        ),
     "(sum (var t)
        (* (* (I (E (var v) (var t)))
              (I (= (D (var s) (var t)) (+ (D (var s) (var v)) (lit 1)))))
@@ -16,18 +23,19 @@ test_fn! {
           (* (I (E (var v) (var t)))
              (/ (sig (var s) (var v) (var t)) (sig (var s) (var t)))))
         (sum (var t) (sum (var u)
-          (* (I (E (var v) (var t))) (* (I (neq (var u) (var t)))
+          (* (* (I (neq (var u) (var t))) (I (E (var v) (var t))))
+(* (I (= (D (var s) (var u)) (+ (D (var s) (var t)) (D (var t) (var u)))))
              (/ (* (sig (var s) (var v) (var t))
-                   (sig (var s) (var t) (var u)))
+(* (sig (var s) (var t)) (sig (var t) (var u)) ))
                 (* (sig (var s) (var t)) (sig (var s) (var u)))))))))"
     // "(+ (sum (var t)
     //       (* (I (E (var v) (var t)))
     //          (/ (sig (var s) (var v) (var t)) (sig (var s) (var t)))))
-    //     (sum (var t)
-    //       (* (* (I (E (var v) (var t))) (I (neq (var u) (var t))))
-    //          (* (/ (* (sig (var s) (var v) (var t)) (sig (var s) (var t) (var u)))
-    //                (* (sig (var s) (var t)) (sig (var s) (var u))))
-    //             (+ (lit 1) (C (var s) (var t)))))))"
+    //     (sum (var t) (sum (var u)
+    //       (* (I (E (var v) (var t))) (* (I (neq (var u) (var t)))
+    //          (/ (* (sig (var s) (var v) (var t))
+    //                (sig (var s) (var t) (var u)))
+    //             (* (sig (var s) (var t)) (sig (var s) (var u)))))))))"
     // =>
     // "(sum (var t)
     //    (* (I (E (var v) (var t)))
