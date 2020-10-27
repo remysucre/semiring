@@ -217,6 +217,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("mul-1"; "(* ?a 1)" => "?a"),
+        rw!("pow0"; "(pow ?x 0)" => "1"),
     ];
     rs.extend(vec![
         // subst rules
@@ -237,10 +238,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         // NOTE bang!
         rw!("exp-mul"; "(* (pow ?a ?b) (pow ?a ?c))" <=> "(pow ?a (+ ?b ?c))"),
         rw!("base-mul"; "(* (pow ?a ?b) (pow ?c ?b))" <=> "(pow (* ?a ?c) ?b)"),
-        // rw!("pow0"; "(pow ?x 0)" => "1"),
-        // rw!("pow1"; "(pow ?x 1)" <=> "?x"),
-        // rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
-        // rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
+        rw!("pow1"; "(pow ?x 1)" <=> "?x"),
+        rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
+        rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
     ].concat());
     rs.extend(vec![
         rw!("sigma-induction";
