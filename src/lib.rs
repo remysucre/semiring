@@ -2,7 +2,7 @@ use egg::{rewrite as rw, *};
 use rand::prelude::*;
 use std::collections::{HashSet, HashMap};
 
-const FP_LEN: usize = 16;
+const FP_LEN: usize = 32;
 
 // REVIEW
 define_language! {
@@ -294,6 +294,12 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("pow1"; "(pow ?x 1)" <=> "?x"),
         rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
         rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
+        // NOTE lemmas
+        // rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
+        // // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
+        // rw!("l-51";  "(I (< ?j ?t))" <=> "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
+        // rw!("l-52";  "(I (= ?j ?t))" <=> "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
+        // rw!("l-53";  "(I (< ?j ?t))" <=> "(I (<= ?j (- ?t 1)))"),
     ].concat());
     rs.extend(vec![
         rw!("sigma-induction";
