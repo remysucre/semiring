@@ -1,6 +1,10 @@
 use egg::{rewrite as rw, *};
-use std::collections::HashSet;
+use rand::prelude::*;
+use std::collections::{HashSet, HashMap};
 
+const FP_LEN: usize = 16;
+
+// REVIEW
 define_language! {
     pub enum Semiring {
         Num(i32),
@@ -30,6 +34,7 @@ define_language! {
     }
 }
 
+// REVIEW
 impl Semiring {
     fn num(&self) -> Option<i32> {
         match self {
@@ -46,28 +51,35 @@ pub struct BindAnalysis {
     pub found: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Data {
     free: HashSet<Id>,
     pub found: bool,
     constant: Option<Semiring>,
+    fingerprint: Option<Vec<i32>>,
 }
 
+// REVIEW
 impl Analysis<Semiring> for BindAnalysis {
     type Data = Data;
     fn merge(&self, to: &mut Data, from: Data) -> bool {
-        let before_len = to.free.len();
-        to.free.retain(|i| from.free.contains(i));
-        to.found = from.found || to.found;
-        let did_change = before_len != to.free.len();
-        if to.constant.is_none() && from.constant.is_some() {
-            to.constant = from.constant;
-            true
+        if *to == from {
+            false
         } else {
-            did_change
+            // FIXME this might be wrong
+            to.free.retain(|i| from.free.contains(&*i));
+            if from.constant.is_some() {
+                to.constant = from.constant;
+            }
+            if from.fingerprint.is_some() {
+                to.fingerprint = from.fingerprint;
+            }
+            to.found = from.found || to.found;
+            true
         }
     }
 
+    // REVIEW
     fn make(egraph: &EGraph, enode: &Semiring) -> Data {
         let f = |i: &Id| egraph[*i].data.free.iter().cloned();
         let mut free = HashSet::default();
@@ -87,13 +99,16 @@ impl Analysis<Semiring> for BindAnalysis {
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
         let constant = eval(egraph, enode);
+        let fingerprint = fingerprint(egraph, enode);
         Data {
             free,
             found: egraph.analysis.found,
-            constant
+            constant,
+            fingerprint
         }
     }
 
+    // REVIEW
     fn modify(egraph: &mut EGraph, id: Id)
     {
         if let Some(c) = egraph[id].data.constant.clone() {
@@ -103,6 +118,40 @@ impl Analysis<Semiring> for BindAnalysis {
     }
 }
 
+// REVIEW
+fn combine_fp<F>(x: &Option<Vec<i32>>, y: &Option<Vec<i32>>, f: F) -> Option<Vec<i32>>
+    where F: Fn((&i32, &i32))-> i32
+{
+    if let (Some(v_x), Some(v_y)) = (x, y) {
+            Some(v_x.iter().zip(v_y.iter()).map(f).collect())
+    } else { None }
+}
+
+// REVIEW
+fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
+    let f = |i: &Id| &egraph[*i].data.fingerprint;
+    match enode {
+        Semiring::Var(v) => Some({
+            println!("{:?}", v);
+            (0..FP_LEN).map(|_| thread_rng().gen()).collect()
+        }),
+        Semiring::Num(n) => Some({
+            (0..FP_LEN).map(|_| *n).collect()
+        }),
+        Semiring::Add([a, b]) => combine_fp(f(a), f(b), |(x,y)| x + y),
+        Semiring::Min([a, b]) => combine_fp(f(a), f(b), |(x,y)| x - y),
+        Semiring::Mul([a, b]) => combine_fp(f(a), f(b), |(x,y)| x * y),
+        Semiring::Ind(b) => f(b).clone(),
+        Semiring::Lt([a, b]) => combine_fp(f(a), f(b), |(x,y)| if x < y {1} else {0}),
+        Semiring::Leq([a, b]) => combine_fp(f(a), f(b), |(x,y)| if x <= y {1} else {0}),
+        Semiring::Eq([a, b]) => combine_fp(f(a), f(b), |(x,y)| if x == y {1} else {0}),
+        Semiring::Gt([a, b]) => combine_fp(f(a), f(b), |(x,y)| if x > y {1} else {0}),
+        Semiring::Geq([a, b]) => combine_fp(f(a), f(b), |(x,y)| if x >= y {1} else {0}),
+        _ => None,
+    }
+}
+
+// REVIEW
 fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {
     let x = |i: &Id| egraph[*i].data.constant.clone();
     match enode {
@@ -114,6 +163,7 @@ fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {
     }
 }
 
+// REVIEW
 pub struct Found {
     msg: &'static str,
 }
@@ -142,6 +192,7 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
     }
 }
 
+// REVIEW
 pub struct Destroy<A: Applier<Semiring, BindAnalysis>> {
     e: A,
 }
@@ -151,6 +202,7 @@ pub struct RenameSum {
     e: Pattern<Semiring>,
 }
 
+// REVIEW
 impl<A: Applier<Semiring, BindAnalysis>> Applier<Semiring, BindAnalysis> for Destroy<A> {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         egraph[eclass].nodes.clear();
@@ -173,6 +225,7 @@ impl Applier<Semiring, BindAnalysis> for RenameSum {
     }
 }
 
+// REVIEW
 fn var(s: &str) -> Var {
     s.parse().unwrap()
 }
@@ -191,6 +244,7 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[(subst[b])].data.free.contains(&subst[x])
 }
 
+// REVIEW
 pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     let mut rs = vec![
         rw!("let-const";
@@ -271,6 +325,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     rs
 }
 
+// REVIEW
 fn is_const(v: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[subst[v]].data.constant.is_some()
 }
@@ -291,6 +346,7 @@ fn rw_1(
     .unwrap()
 }
 
+// REVIEW
 pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     vec![
         rw_1(
@@ -349,4 +405,21 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         ),
         rw_1("subtract", "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
     ]
+}
+
+// REVIEW
+// TODO use iteration data to compute this incrementally
+pub fn solve_eqs(runner: &mut Runner<Semiring, BindAnalysis>) -> Result<(), String> {
+    let mut fingerprints: HashMap<&Vec<i32>, Id> = HashMap::new();
+    for class in runner.egraph.classes() {
+        if let Some(fp) = &class.data.fingerprint {
+            if let Some(_c) = fingerprints.get(fp) {
+                todo!()
+            } else {
+                fingerprints.insert(fp, class.id);
+                todo!()
+            }
+        }
+    }
+    Ok(())
 }
