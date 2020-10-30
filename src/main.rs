@@ -5,10 +5,10 @@ fn main() {
         env_logger::init();
         let r = Runner::<Semiring, BindAnalysis>::default()
         .with_expr(
-            &"(+ (var x) (< (var j) (var t)))".parse().unwrap()
+            &"(+ (var x) (I (< (var j) (var t))))".parse().unwrap()
         )
         .with_expr(
-            &"(+ (var x) (<= (var j) (- (var t) 1)))".parse().unwrap()
+            &"(+ (var x) (I (<= (var j) (- (var t) 1))))".parse().unwrap()
         )
         .with_hook(solve_eqs)
         .run(&normalize());
@@ -45,6 +45,5 @@ fn main() {
         // .with_expr(
         //     &"(+ 3 (< 2 3))".parse().unwrap()
         // )
-
-        r.print_report()
+        assert_eq!(r.egraph.find(r.roots[0]), r.egraph.find(r.roots[1]))
 }

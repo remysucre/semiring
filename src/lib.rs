@@ -67,7 +67,7 @@ impl Analysis<Semiring> for BindAnalysis {
             false
         } else {
             // FIXME this might be wrong
-            to.free.retain(|i| from.free.contains(&*i));
+            to.free.retain(|i| from.free.contains(i));
             if from.constant.is_some() {
                 to.constant = from.constant;
             }
@@ -132,7 +132,6 @@ fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     let f = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
         Semiring::Var(v) => Some({
-            println!("{:?}", v);
             (0..FP_LEN).map(|_| thread_rng().gen()).collect()
         }),
         Semiring::Num(n) => Some({
@@ -346,6 +345,15 @@ fn rw_1(
     .unwrap()
 }
 
+pub fn lemmas() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+    vec![
+        rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
+        // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
+        rw!("l-51";  "(I (< ?j ?t))" <=> "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-52";  "(I (= ?j ?t))" <=> "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-53";  "(I (< ?j ?t))" <=> "(I (<= ?j (- ?t 1)))"),
+    ].concat()
+}
 // REVIEW
 pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     vec![
@@ -410,16 +418,31 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
 // REVIEW
 // TODO use iteration data to compute this incrementally
 pub fn solve_eqs(runner: &mut Runner<Semiring, BindAnalysis>) -> Result<(), String> {
-    let mut fingerprints: HashMap<&Vec<i32>, Id> = HashMap::new();
+    let mut fingerprints: HashMap<&Vec<i32>, Vec<Id>> = HashMap::new();
     for class in runner.egraph.classes() {
         if let Some(fp) = &class.data.fingerprint {
-            if let Some(_c) = fingerprints.get(fp) {
-                todo!()
-            } else {
-                fingerprints.insert(fp, class.id);
-                todo!()
+            fingerprints.entry(fp)
+                        .or_insert(vec![])
+                        .push(class.id);
+        }
+    }
+    let mut to_union = vec![];
+    for matches in fingerprints.values() {
+        for c_1 in matches.iter() {
+            for c_2 in matches.iter() {
+                let mut extractor = Extractor::new(&runner.egraph, AstSize);
+                let (_, e_1) = extractor.find_best(*c_1);
+                let (_, e_2) = extractor.find_best(*c_2);
+                let local_runner = Runner::default().with_expr(&e_1).with_expr(&e_2).run(&lemmas());
+                if local_runner.egraph.find(local_runner.roots[0])
+                    == local_runner.egraph.find(local_runner.roots[1]) {
+                        to_union.push((*c_1, *c_2));
+                }
             }
         }
+    }
+    for (c_1, c_2) in to_union {
+        runner.egraph.union(c_1, c_2);
     }
     Ok(())
 }
