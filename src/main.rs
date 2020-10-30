@@ -10,16 +10,23 @@ fn main() {
                 .with_iter_limit(60)
 
                 .with_expr(
-            &"(+ (sum (var j) (sum (var w)
-(* (* (rel R (- (var t) 1) (var j) (var w)) (var w))
-(* (* (I (< (var j) (var t))) (I (> (var t) 1)))
-(* (I (<= 1 (var j))) (I (<= (var j) (var t))))))))
-            (sum (var j) (sum (var w)
-(* (* (rel v (var j) (var w)) (var w))
-(* (I (= (var t) (var j))) (* (I (<= 1 (var j))) (I (<= (var j) (var t)))))))))"
-                .parse()
-                .unwrap()
-        )
+                        &"
+(sum (var w) (sum (var j)
+(* (* (var w) (* (I (<= 1 (var j))) (I (<= (var j) (var t)))))
+(+ (* (I (= (var t) (var j))) (rel v (var j) (var w)))
+(* (rel R (- (var t) 1) (var j) (var w)) (* (I (< (var j) (var t))) (I (> (var t) 1))))))))"
+                .parse().unwrap())
+//                 .with_expr(
+//             &"(+ (sum (var j) (sum (var w)
+// (* (* (rel R (- (var t) 1) (var j) (var w)) (var w))
+// (* (* (I (< (var j) (var t))) (I (> (var t) 1)))
+// (* (I (<= 1 (var j))) (I (<= (var j) (var t))))))))
+//             (sum (var j) (sum (var w)
+// (* (* (rel v (var j) (var w)) (var w))
+// (* (I (= (var t) (var j))) (* (I (<= 1 (var j))) (I (<= (var j) (var t)))))))))"
+//                 .parse()
+//                 .unwrap()
+//         )
                 .with_expr(
             &"(+ (* (I (> (var t) 1)) (sum (var j) (sum (var w)
 (* (* (rel R (- (var t) 1) (var j) (var w)) (var w))
