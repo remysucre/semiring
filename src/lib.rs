@@ -260,6 +260,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
                 e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
+        // FIXME var or no var?
         rw!("let-sum-same"; "(let ?v1 ?e (sum ?v1 ?body))" => "(sum ?v1 ?body)"),
         rw!("let-sum-diff";
             "(let ?v1 ?e (sum ?v2 ?body))" =>
@@ -310,6 +311,24 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
             "(* (I (E (var v) (var t))) (sig (var s) (var v) (var t)))"
         ),
     ].concat());
+    rs.extend(vec![
+        rw!("trivial";
+            "(sum ?w (* ?w (I (= ?x ?w))))"
+            =>
+            "?x"
+        // // FIXME t cannot be free in e
+        // rw!("UDP-14";
+        //     "(sum ?t (I (= ?t ?e)))"
+        //     =>
+        //     "1"
+        // ),
+        // // TODO generalize to arbitrary subst as in paper
+        // rw!("UDP-13";
+        //     "(* ?a (I (= (var ?x) (var ?y))))"
+        //     =>
+        //     "(* (let ?x (var ?y) ?a) (I (= (var ?x) (var ?y))))"
+        )
+    ]);
     rs.extend(vec![
         rw!("C-definition";
             "(C ?s ?v)"
