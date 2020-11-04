@@ -7,18 +7,27 @@ const FP_LEN: usize = 32;
 // REVIEW
 define_language! {
     pub enum Semiring {
+        // a bare number is a literal
         Num(i32),
+        // all variables are tagged with var
+        // to distinguish from relations
         "var" = Var(Id),
 
+        // relations are tagged with rel
         "rel" = Rel(Box<[Id]>),
 
         "+" = Add([Id; 2]),
         "-" = Min([Id; 2]),
         "*" = Mul([Id; 2]),
 
+        // NOTE the "var" in (sum (var i) ...)
         "sum" = Sum([Id; 2]),
+
+        // NOTE the "var" in let (var x) (var y) ...
+        // let (var v1) (var v2) e: e[v1 |-> v2]
         "let" = Let([Id; 3]),
 
+        // indicator, i.e. (I true) = 1, (I false) = 0
         "I" = Ind(Id),
         "<" = Lt([Id; 2]),
         "<=" = Leq([Id; 2]),
@@ -30,11 +39,12 @@ define_language! {
 
         Symbol(egg::Symbol),
 
+        // fallback to arbitrary "UDF"
         Other(Symbol, Vec<Id>),
     }
 }
 
-// REVIEW
+// extract literal numbers if any
 impl Semiring {
     fn num(&self) -> Option<i32> {
         match self {
@@ -47,14 +57,13 @@ impl Semiring {
 pub type EGraph = egg::EGraph<Semiring, BindAnalysis>;
 
 #[derive(Default, Clone)]
-pub struct BindAnalysis {
-    pub found: bool,
-}
+pub struct BindAnalysis;
 
+// metadata for each class
 #[derive(Debug, PartialEq, Eq)]
 pub struct Data {
+    // set of free variables by their class ID
     free: HashSet<Id>,
-    pub found: bool,
     constant: Option<Semiring>,
     fingerprint: Option<Vec<i32>>,
 }
@@ -74,7 +83,6 @@ impl Analysis<Semiring> for BindAnalysis {
             if from.fingerprint.is_some() {
                 to.fingerprint = from.fingerprint;
             }
-            to.found = from.found || to.found;
             true
         }
     }
@@ -102,7 +110,6 @@ impl Analysis<Semiring> for BindAnalysis {
         let fingerprint = fingerprint(egraph, enode);
         Data {
             free,
-            found: egraph.analysis.found,
             constant,
             fingerprint
         }
@@ -182,8 +189,11 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
         let v2_free_in_e = egraph[e].data.free.contains(&v2);
         if v2_free_in_e {
             let mut subst = subst.clone();
-            let sym = Semiring::Symbol(format!("_{}", eclass).into());
-            subst.insert(self.fresh, egraph.add(sym));
+            let sym = egraph.add(
+                Semiring::Symbol(format!("_{}", eclass).into())
+            );
+            let var = Semiring::Var(sym);
+            subst.insert(self.fresh, egraph.add(var));
             self.if_free.apply_one(egraph, eclass, &subst)
         } else {
             self.if_not_free.apply_one(egraph, eclass, &subst)
@@ -330,6 +340,37 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         )
     ]);
     rs.extend(vec![
+        rw!("R-definition";
+            "(def R ?t ?j ?w)"
+            =>
+            "
+(+ (* (I (= ?j ?t))
+      (rel v ?j ?w))
+   (* (rel R (- ?t 1) ?j ?w)
+      (* (I (< ?j ?t))
+         (I (> ?t 1)))))
+"
+        ),
+        rw!("S-definition";
+            "(def S ?t)"
+            =>
+            "
+(- (sum (var j)
+        (sum (var w)
+             (* (* (rel R ?t (var j) (var w))
+                   (var w))
+                (* (I (<= (var j) ?t))
+                   (I (>= (var j) 1))))))
+   (sum (var j)
+        (sum (var w)
+             (* (* (rel R ?t (var j) (var w))
+                   (var w))
+                (* (I (>= (var j) 1))
+                   (* (I (<= (var j)
+                             (- ?t (var k))))
+                      (I (> ?t (var k)))))))))
+"
+        ),
         rw!("C-definition";
             "(C ?s ?v)"
             =>

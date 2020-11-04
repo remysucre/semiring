@@ -1,0 +1,6 @@
+(- (+ (def S (- (var t) 1))
+      (* (var w)
+         (rel v (var t) (var w))))
+   (* (* (var w)
+         (rel v (- (var t) (var k)) (var w)))
+      (I (> (var t) (var k)))))

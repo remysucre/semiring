@@ -9,33 +9,32 @@ fn main() {
                 // .with_node_limit(50_000)
                 // .with_iter_limit(60)
                 .with_expr(
-                        &"(sum (var w) (* (var w) (I (= (var x) (var w)))))"
-//                         &"
-// (sum (var w)
-//      (* (+ (rel E (var x) (var z) (var w))
-//            (sum (var y)
-//                 (sum (var w1)
-//                      (sum (var w2)
-//                           (* (* (rel R (var x) (var y) (var w1))
-//                                 (rel E (var y) (var z) (var w2)))
-//                              (I (= (var w) (* (var w1) (var w2)))))))))
-//         (var w)))
-// "
+                        &"
+(- (sum (var j)
+        (sum (var w)
+             (* (* (def R (var t) (var j) (var w))
+                   (var w))
+                (* (I (<= (var j) (var t)))
+                   (I (>= (var j) 1))))))
+   (sum (var j)
+        (sum (var w)
+             (* (* (def R (var t) (var j) (var w))
+                   (var w))
+                (* (I (>= (var j) 1))
+                   (* (I (<= (var j)
+                             (- (var t) (var k))))
+                      (I (> (var t) (var k)))))))))
+"
                 .parse().unwrap())
                 .with_expr(
-                        &"(var x)"
-//             &"
-// (+ (sum (var w)
-//         (* (var w)
-//            (rel E (var x) (var z) (var w))))
-//    (sum (var y)
-//         (* (sum (var w1)
-//                 (* (var w1)
-//                    (rel R (var x) (var y) (var w1))))
-//            (sum (var w2)
-//                 (* (var w2)
-//                    (rel E (var y) (var z) (var w2)))))))
-// "
+                        &"
+(- (+ (def S (- (var t) 1))
+      (* (var w)
+         (rel v (var t) (var w))))
+   (* (* (var w)
+         (rel v (- (var t) (var k)) (var w)))
+      (I (> (var t) (var k)))))
+"
                 .parse()
                 .unwrap()
         )
