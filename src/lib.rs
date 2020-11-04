@@ -306,11 +306,14 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
         rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
         rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
         // NOTE lemmas
-        // rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
-        // // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
-        // rw!("l-51";  "(I (< ?j ?t))" <=> "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
-        // rw!("l-52";  "(I (= ?j ?t))" <=> "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
-        // rw!("l-53";  "(I (< ?j ?t))" <=> "(I (<= ?j (- ?t 1)))"),
+        rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
+        // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
+        rw!("l-51";  "(I (< ?j ?t))" <=> "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-52";  "(I (= ?j ?t))" <=> "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-53";  "(I (< ?j ?t))" <=> "(I (<= ?j (- ?t 1)))"),
+        // rw!("l-80";  "(I (<= ?j ?t))" <=> "(I (< (- ?j 1) ?t))"),
+        // rw!("l-81";  "(I (< ?j ?t))" <=> "(- (I (<= ?j ?t)) (I (= ?j ?t)))"),
+        // rw!("l-82";  "(I (<= ?j ?t))" <=> "(- (I (<= (- ?j 1) ?t)) (I (= (- ?j 1) ?t)))"),
     ].concat());
     rs.extend(vec![
         rw!("sigma-induction";
@@ -351,25 +354,49 @@ pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
          (I (> ?t 1)))))
 "
         ),
+        rw!("RT-definition";
+            "(def RT ?t)"
+            =>
+            "
+(sum (var w)
+     (sum (var j)
+          (* (* (var w) (* (I (<= 1 (var j)))
+                           (I (<= (var j) ?t))))
+             (def R ?t (var j) (var w)))))
+"
+        ),
+        rw!("RT-rhs";
+            "(def RT-rhs ?t)"
+            =>
+            "
+(sum (var w)
+     (sum (var j)
+          (* (* (var w) (* (I (<= 1 (var j)))
+                           (I (<= (var j) ?t))))
+             (rel R ?t (var j) (var w)))))
+"
+        ),
+        rw!("def-vec";
+            "(vec ?t)"
+            =>
+            "
+(sum (var j)
+        (sum (var w)
+             (* (* (rel v (var j) (var w))
+                   (var w))
+                (* (I (= ?t (var j)))
+                   (I (<= 1 (var j)))))))
+"
+        ),
         rw!("S-definition";
             "(def S ?t)"
             =>
-            "
-(- (sum (var j)
-        (sum (var w)
-             (* (* (rel R ?t (var j) (var w))
-                   (var w))
-                (* (I (<= (var j) ?t))
-                   (I (>= (var j) 1))))))
-   (sum (var j)
-        (sum (var w)
-             (* (* (rel R ?t (var j) (var w))
-                   (var w))
-                (* (I (>= (var j) 1))
-                   (* (I (<= (var j)
-                             (- ?t (var k))))
-                      (I (> ?t (var k)))))))))
-"
+            "(- (def RT ?t) (def RT (- ?t (var k))))"
+        ),
+        rw!("S-rhs";
+            "(def S-rhs ?t)"
+            =>
+            "(+ (- (def RT-rhs ?t) (def RT-rhs (- ?t (var k)))) (- (vec (var t)) (vec (- (var t) (var k)))))"
         ),
         rw!("C-definition";
             "(C ?s ?v)"
