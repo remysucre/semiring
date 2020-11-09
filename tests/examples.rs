@@ -7,6 +7,15 @@ fn check_eq(x: &str, y:&str) {
         .with_node_limit(50_000)
         .with_expr(&x.parse().unwrap())
         .with_expr(&y.parse().unwrap())
+        .with_hook(|runner| {
+            let lhs = runner.egraph.find(runner.roots[0]);
+            let rhs = runner.egraph.find(runner.roots[1]);
+            if lhs == rhs {
+                Err("qed".to_string())
+            } else {
+                Ok(())
+            }
+        })
         .run(&rules());
     let lhs = runner.roots[0];
     let rhs = runner.roots[1];
