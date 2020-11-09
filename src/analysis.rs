@@ -98,7 +98,6 @@ where
     Some(v_x.iter().zip(v_y.iter()).map(f).collect())
 }
 
-// REVIEW
 fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     let fp = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
@@ -117,7 +116,6 @@ fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     }
 }
 
-// REVIEW
 fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {
     let x = |i: &Id| egraph[*i].data.constant.clone();
     match enode {
