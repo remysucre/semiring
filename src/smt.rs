@@ -1,9 +1,9 @@
 use egg::*;
 use std::collections::HashMap;
 
-use crate::rewrites::*;
-use crate::lang::*;
 use crate::analysis::*;
+use crate::lang::*;
+use crate::rewrites::*;
 
 // TODO use iteration data to compute this incrementally
 pub fn solve_eqs(runner: &mut Runner<Semiring, SemiringAnalysis>) -> Result<(), String> {

@@ -33,10 +33,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
             // if both have one.
             if let Some(c_from) = from.constant {
                 if let Some(c_to) = &to.constant {
-                    assert_eq!(
-                        &c_from, c_to,
-                        "merging classes with different constants"
-                    );
+                    assert_eq!(&c_from, c_to, "merging classes with different constants");
                 } else {
                     to.constant = Some(c_from);
                 }
