@@ -1,46 +1,48 @@
 use egg::*;
 
-// REVIEW
 define_language! {
     pub enum Semiring {
-        // a bare number is a literal
+        // A bare number is a literal
         Num(i32),
-        // all variables are tagged with var
+
+        // All variables are tagged with var
         // to distinguish from relations
+        // e.g. (var x)
         "var" = Var(Id),
 
-        // relations are tagged with rel
+        // Relations are tagged with rel
+        // e.g. (rel R (var x) (var y))
         "rel" = Rel(Box<[Id]>),
 
         "+" = Add([Id; 2]),
         "-" = Min([Id; 2]),
         "*" = Mul([Id; 2]),
 
-        // NOTE the "var" in (sum (var i) ...)
+        // NOTE Remember the `var` tag for the
+        // aggregated variable, e.g. (sum (var i) ...)
         "sum" = Sum([Id; 2]),
 
-        // NOTE the "var" in let (var x) (var y) ...
-        // let (var v1) (var v2) e: e[v1 |-> v2]
+        // NOTE Remember the `var` tag for variables,
+        // e.g. let (var v1) (var v2) = e: e[v1 |-> v2]
         "let" = Let([Id; 3]),
 
-        // indicator, i.e. (I true) = 1, (I false) = 0
+        // Indicator, i.e. (I true) = 1, (I false) = 0
         "I" = Ind(Id),
+
         "<" = Lt([Id; 2]),
         "<=" = Leq([Id; 2]),
-
         ">" = Gt([Id; 2]),
         ">=" = Geq([Id; 2]),
-
         "=" = Eq([Id; 2]),
 
         Symbol(egg::Symbol),
 
-        // fallback to arbitrary "UDF"
+        // Fallback to arbitrary "UDF"
         Other(Symbol, Vec<Id>),
     }
 }
 
-// extract literal numbers if any
+// Extract literal numbers if any
 impl Semiring {
     pub fn num(&self) -> Option<i32> {
         match self {
