@@ -20,20 +20,34 @@ pub struct Data {
     pub fingerprint: Option<Vec<i32>>,
 }
 
-// REVIEW
 impl Analysis<Semiring> for SemiringAnalysis {
     type Data = Data;
     fn merge(&self, to: &mut Data, from: Data) -> bool {
         if *to == from {
             false
         } else {
-            // FIXME this might be wrong
+            // The free vars may differ due to constant folding
             to.free.retain(|i| from.free.contains(i));
-            if from.constant.is_some() {
-                to.constant = from.constant;
+
+            // Merged classes must agree on the constant value,
+            // if both have one.
+            if let Some(c_from) = from.constant {
+                if let Some(c_to) = &to.constant {
+                    assert_eq!(
+                        &c_from, c_to,
+                        "merging classes with different constants"
+                    );
+                } else {
+                    to.constant = Some(c_from);
+                }
             }
-            if from.fingerprint.is_some() {
-                to.fingerprint = from.fingerprint;
+            // TODO Not sure how to merge fingerprints
+            if let Some(fp_from) = from.fingerprint {
+                if let Some(_fp_to) = &to.fingerprint {
+                    // Do nothing for now
+                } else {
+                    to.fingerprint = Some(fp_from);
+                }
             }
             true
         }
