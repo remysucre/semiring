@@ -1,12 +1,10 @@
-use egg::rewrite as rw;
-use egg::*;
+use egg::{rewrite as rw, *};
 use std::collections::HashMap;
 
 use crate::analysis::*;
 use crate::lang::*;
 use crate::EGraph;
 
-// REVIEW
 pub struct Found {
     msg: &'static str,
 }
@@ -36,7 +34,6 @@ impl Applier<Semiring, SemiringAnalysis> for CaptureAvoid {
     }
 }
 
-// REVIEW
 pub struct Destroy<A: Applier<Semiring, SemiringAnalysis>> {
     e: A,
 }
@@ -46,7 +43,6 @@ pub struct RenameSum {
     e: Pattern<Semiring>,
 }
 
-// REVIEW
 impl<A: Applier<Semiring, SemiringAnalysis>> Applier<Semiring, SemiringAnalysis> for Destroy<A> {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         egraph[eclass].nodes.clear();
@@ -63,13 +59,13 @@ impl Applier<Semiring, SemiringAnalysis> for Found {
 impl Applier<Semiring, SemiringAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
-        let sym = Semiring::Symbol(format!("_{}", eclass).into());
-        subst.insert(self.fresh, egraph.add(sym));
+        let sym = egraph.add(Semiring::Symbol(format!("_{}", eclass).into()));
+        let var = Semiring::Var(sym);
+        subst.insert(self.fresh, egraph.add(var));
         self.e.apply_one(egraph, eclass, &subst)
     }
 }
 
-// REVIEW
 fn var(s: &str) -> Var {
     s.parse().unwrap()
 }
@@ -84,20 +80,17 @@ fn not_free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
 }
 
 fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
-    // NOTE might want to call `find`
-    move |egraph, _, subst| egraph[(subst[b])].data.free.contains(&subst[x])
+    move |egraph, _, subst| egraph[subst[b]].data.free.contains(&subst[x])
 }
 
-// REVIEW
 pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     let mut rs = vec![
         rw!("let-const";
             "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
-        rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
-        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
+        rw!("let-var-same"; "(let (var ?v1) ?e (var ?v1))" => "?e"),
+        rw!("let-var-diff"; "(let (var ?v1) ?e (var ?v2))" => "(var ?v2)"
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
-        // NOTE can be generating a bunch of stuff here
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" =>
             { RenameSum {
@@ -105,14 +98,13 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
                 e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
-        // FIXME var or no var?
         rw!("let-sum-same"; "(let ?v1 ?e (sum ?v1 ?body))" => "(sum ?v1 ?body)"),
         rw!("let-sum-diff";
             "(let ?v1 ?e (sum ?v2 ?body))" =>
             { CaptureAvoid {
                 fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
                 if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
-                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 ?fresh ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("mul-1"; "(* ?a 1)" => "?a"),
@@ -120,8 +112,8 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     ];
     rs.extend(vec![
         // subst rules
-        rw!("let-add";  "(let ?v ?e (+   ?a ?b))" <=> "(+   (let ?v ?e ?a) (let ?v ?e ?b))"),
-        rw!("let-eq";   "(let ?v ?e (=   ?a ?b))" <=> "(=   (let ?v ?e ?a) (let ?v ?e ?b))"),
+        rw!("let-add";  "(let ?v ?e (+ ?a ?b))" <=> "(+ (let ?v ?e ?a) (let ?v ?e ?b))"),
+        rw!("let-eq";   "(let ?v ?e (= ?a ?b))" <=> "(= (let ?v ?e ?a) (let ?v ?e ?b))"),
         // open term rules
         rw!("add-comm";  "(+ ?a ?b)"        <=> "(+ ?b ?a)"),
         rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
@@ -132,8 +124,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         rw!("div-canon"; "(/ ?a ?b)" <=> "(* ?a (pow ?b -1))"),
         rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
         rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
-        rw!("add-sum-dist"; "(sum (var ?x) (+ ?a ?b))" <=> "(+ (sum (var ?x) ?a) (sum (var ?x) ?b))"),
-        rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))" if not_free(var("?x"), var("?b"))),
+        rw!("add-sum-dist"; "(sum ?x (+ ?a ?b))" <=> "(+ (sum ?x ?a) (sum ?x ?b))"),
+        rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))"
+            if not_free(var("?x"), var("?b"))),
         // NOTE bang!
         rw!("exp-mul"; "(* (pow ?a ?b) (pow ?a ?c))" <=> "(pow ?a (+ ?b ?c))"),
         rw!("base-mul"; "(* (pow ?a ?b) (pow ?c ?b))" <=> "(pow (* ?a ?c) ?b)"),
@@ -251,7 +244,6 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     rs
 }
 
-// REVIEW
 fn is_const(v: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[subst[v]].data.constant.is_some()
 }
@@ -343,7 +335,6 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     ]
 }
 
-// REVIEW
 // TODO use iteration data to compute this incrementally
 pub fn solve_eqs(runner: &mut Runner<Semiring, SemiringAnalysis>) -> Result<(), String> {
     let mut fingerprints: HashMap<&Vec<i32>, Vec<Id>> = HashMap::new();
