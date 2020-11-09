@@ -6,7 +6,7 @@ use std::time;
 
 fn main() {
     env_logger::init();
-    let r = Runner::<Semiring, BindAnalysis>::default()
+    let r = Runner::<Semiring, SemiringAnalysis>::default()
         .with_time_limit(time::Duration::from_secs(60))
         .with_node_limit(50_000)
         .with_iter_limit(500)

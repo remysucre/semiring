@@ -19,7 +19,7 @@ pub struct CaptureAvoid {
     if_free: Pattern<Semiring>,
 }
 
-impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
+impl Applier<Semiring, SemiringAnalysis> for CaptureAvoid {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let e = subst[self.e];
         let v2 = subst[self.v2];
@@ -37,7 +37,7 @@ impl Applier<Semiring, BindAnalysis> for CaptureAvoid {
 }
 
 // REVIEW
-pub struct Destroy<A: Applier<Semiring, BindAnalysis>> {
+pub struct Destroy<A: Applier<Semiring, SemiringAnalysis>> {
     e: A,
 }
 
@@ -47,20 +47,20 @@ pub struct RenameSum {
 }
 
 // REVIEW
-impl<A: Applier<Semiring, BindAnalysis>> Applier<Semiring, BindAnalysis> for Destroy<A> {
+impl<A: Applier<Semiring, SemiringAnalysis>> Applier<Semiring, SemiringAnalysis> for Destroy<A> {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         egraph[eclass].nodes.clear();
         self.e.apply_one(egraph, eclass, subst)
     }
 }
 
-impl Applier<Semiring, BindAnalysis> for Found {
+impl Applier<Semiring, SemiringAnalysis> for Found {
     fn apply_one(&self, _egraph: &mut EGraph, _eclass: Id, _subst: &Subst) -> Vec<Id> {
         panic!("Found {}", self.msg)
     }
 }
 
-impl Applier<Semiring, BindAnalysis> for RenameSum {
+impl Applier<Semiring, SemiringAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
         let sym = Semiring::Symbol(format!("_{}", eclass).into());
@@ -89,7 +89,7 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
 }
 
 // REVIEW
-pub fn rules() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     let mut rs = vec![
         rw!("let-const";
             "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
@@ -261,7 +261,7 @@ fn rw_1(
     name: &'static str,
     lhs: &'static str,
     rhs: &'static str,
-) -> Rewrite<Semiring, BindAnalysis> {
+) -> Rewrite<Semiring, SemiringAnalysis> {
     Rewrite::new(
         name,
         lhs.parse::<Pattern<Semiring>>().unwrap(),
@@ -272,7 +272,7 @@ fn rw_1(
     .unwrap()
 }
 
-pub fn lemmas() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+pub fn lemmas() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     vec![
         rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
         // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
@@ -283,7 +283,7 @@ pub fn lemmas() -> Vec<Rewrite<Semiring, BindAnalysis>> {
     .concat()
 }
 // REVIEW
-pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
+pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     vec![
         rw_1(
             "pushdown-mul",
@@ -345,7 +345,7 @@ pub fn normalize() -> Vec<Rewrite<Semiring, BindAnalysis>> {
 
 // REVIEW
 // TODO use iteration data to compute this incrementally
-pub fn solve_eqs(runner: &mut Runner<Semiring, BindAnalysis>) -> Result<(), String> {
+pub fn solve_eqs(runner: &mut Runner<Semiring, SemiringAnalysis>) -> Result<(), String> {
     let mut fingerprints: HashMap<&Vec<i32>, Vec<Id>> = HashMap::new();
     for class in runner.egraph.classes() {
         if let Some(fp) = &class.data.fingerprint {

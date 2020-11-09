@@ -5,22 +5,23 @@ use std::collections::HashSet;
 use crate::lang::*;
 use crate::EGraph;
 
+// Initial length of fingerprint vector
 const FP_LEN: usize = 32;
 
 #[derive(Default, Clone)]
-pub struct BindAnalysis;
+pub struct SemiringAnalysis;
 
-// metadata for each class
+// Metadata for each class
 #[derive(Debug, PartialEq, Eq)]
 pub struct Data {
-    // set of free variables by their class ID
+    // Set of free variables by their class ID
     pub free: HashSet<Id>,
     pub constant: Option<Semiring>,
     pub fingerprint: Option<Vec<i32>>,
 }
 
 // REVIEW
-impl Analysis<Semiring> for BindAnalysis {
+impl Analysis<Semiring> for SemiringAnalysis {
     type Data = Data;
     fn merge(&self, to: &mut Data, from: Data) -> bool {
         if *to == from {
