@@ -53,21 +53,20 @@ impl Analysis<Semiring> for SemiringAnalysis {
         }
     }
 
-    // REVIEW
     fn make(egraph: &EGraph, enode: &Semiring) -> Data {
-        let f = |i: &Id| egraph[*i].data.free.iter().cloned();
+        let fvs = |i: &Id| egraph[*i].data.free.iter().cloned();
         let mut free = HashSet::default();
         match enode {
             Semiring::Var(v) => {
                 free.insert(*v);
             }
             Semiring::Let([v, a, b]) => {
-                free.extend(f(b));
+                free.extend(fvs(b));
                 free.remove(v);
-                free.extend(f(a));
+                free.extend(fvs(a));
             }
             Semiring::Sum([v, a]) => {
-                free.extend(f(a));
+                free.extend(fvs(a));
                 free.remove(v);
             }
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
@@ -81,7 +80,6 @@ impl Analysis<Semiring> for SemiringAnalysis {
         }
     }
 
-    // REVIEW
     fn modify(egraph: &mut EGraph, id: Id) {
         if let Some(c) = egraph[id].data.constant.clone() {
             let const_id = egraph.add(c);
@@ -90,33 +88,31 @@ impl Analysis<Semiring> for SemiringAnalysis {
     }
 }
 
-// REVIEW
 fn combine_fp<F>(x: &Option<Vec<i32>>, y: &Option<Vec<i32>>, f: F) -> Option<Vec<i32>>
 where
     F: Fn((&i32, &i32)) -> i32,
 {
-    if let (Some(v_x), Some(v_y)) = (x, y) {
-        Some(v_x.iter().zip(v_y.iter()).map(f).collect())
-    } else {
-        None
-    }
+    let v_x = x.as_deref()?;
+    let v_y = y.as_deref()?;
+    assert_eq!(v_x.len(), v_y.len(), "fingerprint lengths differ");
+    Some(v_x.iter().zip(v_y.iter()).map(f).collect())
 }
 
 // REVIEW
 fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
-    let f = |i: &Id| &egraph[*i].data.fingerprint;
+    let fp = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
-        Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
         Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
-        Semiring::Add([a, b]) => combine_fp(f(a), f(b), |(x, y)| x + y),
-        Semiring::Min([a, b]) => combine_fp(f(a), f(b), |(x, y)| x - y),
-        Semiring::Mul([a, b]) => combine_fp(f(a), f(b), |(x, y)| x * y),
-        Semiring::Ind(b) => f(b).clone(),
-        Semiring::Lt([a, b]) => combine_fp(f(a), f(b), |(x, y)| if x < y { 1 } else { 0 }),
-        Semiring::Leq([a, b]) => combine_fp(f(a), f(b), |(x, y)| if x <= y { 1 } else { 0 }),
-        Semiring::Eq([a, b]) => combine_fp(f(a), f(b), |(x, y)| if x == y { 1 } else { 0 }),
-        Semiring::Gt([a, b]) => combine_fp(f(a), f(b), |(x, y)| if x > y { 1 } else { 0 }),
-        Semiring::Geq([a, b]) => combine_fp(f(a), f(b), |(x, y)| if x >= y { 1 } else { 0 }),
+        Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
+        Semiring::Add([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x + y),
+        Semiring::Min([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x - y),
+        Semiring::Mul([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x * y),
+        Semiring::Ind(b) => fp(b).clone(),
+        Semiring::Lt([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x < y { 1 } else { 0 }),
+        Semiring::Leq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x <= y { 1 } else { 0 }),
+        Semiring::Eq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x == y { 1 } else { 0 }),
+        Semiring::Gt([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x > y { 1 } else { 0 }),
+        Semiring::Geq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x >= y { 1 } else { 0 }),
         _ => None,
     }
 }
