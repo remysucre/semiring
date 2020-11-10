@@ -108,11 +108,19 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             if is_not_same_var(var("?v1"), var("?v2"))),
         // rw!("pow0"; "(pow ?x 0)" => "1"),
         rw!("mul-1"; "(* ?a 1)" => "?a"),
-        rw!("stupid"; "(- (* ?a ?c) (* ?b ?c))" => "(* (- ?a ?b) ?c)")
+        rw!("mul-0"; "(* ?a 0)" => "0"),
+        rw!("add-0"; "(+ ?a 0)" => "?a"),
+        rw!("sum-0"; "(sum ?i 0)" => "0"),
+        rw!("stupid"; "(* (- ?a ?b) ?c)" => "(- (* ?a ?c) (* ?b ?c))"),
+        rw!("hack2"; "(+ (- ?a ?b) ?c)" => "(- ?a (- ?b ?c))"),
+        rw!("hack3"; "(* (I (<= ?t 0)) (rel ?R ?t ?j ?w))" => "0"),
+        rw!("hack4"; "(I (<= (- ?t ?k) 1))" => "(I (<= (- (- ?t ?k) 1) 0))"),
+
     ];
     rs.extend(
         vec![
             // subst rules
+            rw!("rrrstupid"; "(* (- ?a ?b) ?c)" <=> "(- (* ?a ?c) (* ?b ?c))"),
             rw!("let-add";  "(let ?v ?e (+ ?a ?b))" <=> "(+ (let ?v ?e ?a) (let ?v ?e ?b))"),
             rw!("let-eq";   "(let ?v ?e (= ?a ?b))" <=> "(= (let ?v ?e ?a) (let ?v ?e ?b))"),
             // open term rules

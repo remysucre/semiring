@@ -96,61 +96,7 @@ fn running_total() {
 }
 
 #[test]
-fn this_works() {
-    check_eq("
-(- (sum (var w)
-     (sum (var j)
-          (* (* (var w) (* (I (<= 1 (var j)))
-                           (I (<= (var j) (var t)))))
-             (+ (* (I (= (var t) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (var t) 1) (var j) (var w))
-                   (* (I (< (var j) (var t)))
-                      (I (> (var t) 1))))))))
-   (sum (var w)
-     (sum (var j)
-          (* (* (var w) (* (I (<= 1 (var j)))
-                           (I (<= (var j) (- (var t) (var k))))))
-             (+ (* (I (= (- (var t) (var k)) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                   (* (I (< (var j) (- (var t) (var k))))
-                      (I (> (- (var t) (var k)) 1)))))))))
-", "
-(+ (- (* (I (> (var t) 1))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (var t) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (var t) 1)))
-                         (I (<= 1 (var j))))))))
-      (* (- (I (> (var t) 1))
-            (* (I (> (var t) 1))
-               (I (<= (- (var t) (var k)) 1))))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j)))))))))
-   (- (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (var t) (var j)))
-                      (I (<= 1 (var j)))))))
-      (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))
-"
-    )
-}
-
-#[test]
-fn this_too() {
+fn sliding_window() {
     check_eq("
 (+ (- (* (I (> (var t) 1))
          (sum (var j)
@@ -181,28 +127,19 @@ fn this_too() {
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
 ", "
-(+ (- (* (I (> (var t) 1))
-         (sum (var j)
+(+ (* (I (> (var t) 1))
+      (- (sum (var j)
               (sum (var w)
                    (* (* (rel R (- (var t) 1) (var j) (var w))
                          (var w))
                       (* (I (<= (var j) (- (var t) 1)))
-                         (I (<= 1 (var j))))))))
-      (- (* (I (> (var t) 1))
-            (sum (var j)
+                         (I (<= 1 (var j)))))))
+         (sum (var j)
               (sum (var w)
                    (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
                          (var w))
                       (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j))))))))
-         (* (* (I (> (var t) 1))
-               (I (<= (- (var t) (var k)) 1)))
-            (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j))))))))))
+                         (I (<= 1 (var j)))))))))
    (- (sum (var j)
            (sum (var w)
                 (* (* (rel v (var j) (var w))
@@ -214,75 +151,6 @@ fn this_too() {
                 (* (* (rel v (var j) (var w))
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))
-"
-    )
-}
-
-#[test]
-fn doesnt_work() {
-    check_eq("
-(+ (- (* (I (> (var t) 1))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (var t) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (var t) 1)))
-                         (I (<= 1 (var j))))))))
-      (- (* (I (> (var t) 1))
-            (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j))))))))
-         (* (* (I (> (var t) 1))
-               (I (<= (- (var t) (var k)) 1)))
-            (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j))))))))))
-   (- (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (var t) (var j)))
-                      (I (<= 1 (var j)))))))
-      (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))
-", "
-(- (sum (var w)
-     (sum (var j)
-          (* (* (var w) (* (I (<= 1 (var j)))
-                           (I (<= (var j) (var t)))))
-             (+ (* (I (= (var t) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (var t) 1) (var j) (var w))
-                   (* (I (< (var j) (var t)))
-                      (I (> (var t) 1))))))))
-   (sum (var w)
-     (sum (var j)
-          (* (* (var w) (* (I (<= 1 (var j)))
-                           (I (<= (var j) (- (var t) (var k))))))
-             (+ (* (I (= (- (var t) (var k)) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                   (* (I (< (var j) (- (var t) (var k))))
-                      (I (> (- (var t) (var k)) 1)))))))))
-"
-    )
-}
-
-#[test]
-fn test_stupid() {
-    check_eq(
-        "(- (* (var a) (var c)) (* (var b) (var c)))",
-        "(* (var c) (- (var a) (var b)))"
+                      (I (<= 1 (var j)))))))))"
     )
 }

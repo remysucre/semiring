@@ -1,12 +1,12 @@
 use egg::*;
-use rand::prelude::*;
+// use rand::prelude::*;
 use std::collections::HashSet;
 
 use crate::lang::*;
 use crate::EGraph;
 
 // Initial length of fingerprint vector
-const FP_LEN: usize = 32;
+// const FP_LEN: usize = 32;
 
 #[derive(Default, Clone)]
 pub struct SemiringAnalysis;
@@ -98,8 +98,10 @@ where
 fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     let fp = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
-        Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
-        Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
+        // Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
+        // Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
+        Semiring::Num(_n) => None,
+        Semiring::Var(_v) => None,
         Semiring::Add([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x + y),
         Semiring::Min([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x - y),
         Semiring::Mul([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x * y),
@@ -116,7 +118,7 @@ fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
 fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {
     let x = |i: &Id| egraph[*i].data.constant.clone();
     match enode {
-        Semiring::Num(_) => Some(enode.clone()),
+        Semiring::Num(n) => Some(Semiring::Num(*n)),
         Semiring::Add([a, b]) => Some(Semiring::Num(x(a)?.num()? + x(b)?.num()?)),
         Semiring::Min([a, b]) => Some(Semiring::Num(x(a)?.num()? - x(b)?.num()?)),
         Semiring::Mul([a, b]) => Some(Semiring::Num(x(a)?.num()? * x(b)?.num()?)),
