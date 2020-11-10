@@ -106,8 +106,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
                 if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 ?fresh ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
+        // rw!("pow0"; "(pow ?x 0)" => "1"),
         rw!("mul-1"; "(* ?a 1)" => "?a"),
-        rw!("pow0"; "(pow ?x 0)" => "1"),
+        rw!("stupid"; "(- (* ?a ?c) (* ?b ?c))" => "(* (- ?a ?b) ?c)")
     ];
     rs.extend(
         vec![
@@ -132,22 +133,22 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             // rw!("pow1"; "(pow ?x 1)" <=> "?x"),
             // rw!("pow2"; "(pow ?x 2)" <=> "(* ?x ?x)"),
             // rw!("pow-recip"; "(pow ?x -1)" <=> "(/ 1 ?x)"),
-            // NOTE lemmas
-            rw!("l-49";  "(I (< ?j ?t))" <=> "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
-            // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
-            rw!("l-51";  "(I (< ?j ?t))" <=> "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
-            rw!("l-52";  "(I (= ?j ?t))" <=> "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
-            rw!("l-53";  "(I (< ?j ?t))" <=> "(I (<= ?j (- ?t 1)))"),
-            // rw!("l-80";  "(I (<= ?j ?t))" <=> "(I (< (- ?j 1) ?t))"),
-            // rw!("l-81";  "(I (< ?j ?t))" <=> "(- (I (<= ?j ?t)) (I (= ?j ?t)))"),
-            // rw!("l-82";  "(I (<= ?j ?t))" <=> "(- (I (<= (- ?j 1) ?t)) (I (= (- ?j 1) ?t)))"),
         ]
         .concat(),
     );
     rs.extend(vec![
         rw!("trivial"   ; "(sum ?w (* ?w (I (= ?x ?w))))"          => "?x"),
-        rw!("nat"       ; "(* (I (> (- ?a ?b) ?c)) (I (> ?a ?c)))" => "(I (> (- ?a ?b) ?c))"),
-        rw!("exclusion" ; "(- 1 (I (<= ?a ?b)))"                   => "(I (> ?a ?b))"),
+        // NOTE lemmas
+        rw!("l-49";  "(I (< ?j ?t))" => "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
+        // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
+        rw!("l-51";  "(I (< ?j ?t))" => "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-52";  "(I (= ?j ?t))" => "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
+        rw!("l-53";  "(I (< ?j ?t))" => "(I (<= ?j (- ?t 1)))"),
+        // rw!("l-80";  "(I (<= ?j ?t))" <=> "(I (< (- ?j 1) ?t))"),
+        // rw!("l-81";  "(I (< ?j ?t))" <=> "(- (I (<= ?j ?t)) (I (= ?j ?t)))"),
+        // rw!("l-82";  "(I (<= ?j ?t))" <=> "(- (I (<= (- ?j 1) ?t)) (I (= (- ?j 1) ?t)))"),
+        rw!("nat"; "(* (I (> (- ?a ?b) ?c)) (I (> ?a ?c)))" => "(I (> (- ?a ?b) ?c))"),
+        rw!("exclusion" ; "(- 1 (I (<= ?a ?b)))" => "(I (> ?a ?b))"),
     ]);
     rs
 }

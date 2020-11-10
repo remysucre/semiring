@@ -278,3 +278,8 @@ fn doesnt_work() {
 "
     )
 }
+
+#[test]
+fn test_stupid() {
+    check_eq("(- (* (var a) (var c)) (* (var b) (var c)))", "(* (var c) (- (var a) (var b)))")
+}

@@ -78,10 +78,10 @@ impl Analysis<Semiring> for SemiringAnalysis {
     }
 
     fn modify(egraph: &mut EGraph, id: Id) {
-        // if let Some(c) = egraph[id].data.constant.clone() {
-        //     let const_id = egraph.add(c);
-        //     egraph.union(id, const_id);
-        // }
+        if let Some(c) = egraph[id].data.constant.clone() {
+            let const_id = egraph.add(c);
+            egraph.union(id, const_id);
+        }
     }
 }
 
