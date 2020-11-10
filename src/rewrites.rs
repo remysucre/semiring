@@ -155,10 +155,20 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     //     )]
     //     .concat(),
     // );
-    rs.extend(vec![rw!("trivial";
-        "(sum ?w (* ?w (I (= ?x ?w))))"
-        =>
-        "?x"
+    rs.extend(vec![
+        rw!("trivial";
+            "(sum ?w (* ?w (I (= ?x ?w))))"
+            =>
+            "?x"),
+        rw!("nat";
+            "(* (I (> (- ?a ?b) ?c)) (I (> ?a ?c)))"
+            =>
+            "(I (> (- ?a ?b) ?c))"),
+        rw!("exlusion";
+            "(- 1 (I (<= ?a ?b)))"
+            =>
+            "(I (> ?a ?b))"
+        ),
     // // FIXME t cannot be free in e
     // rw!("UDP-14";
     //     "(sum ?t (I (= ?t ?e)))"
@@ -170,7 +180,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     //     "(* ?a (I (= (var ?x) (var ?y))))"
     //     =>
     //     "(* (let ?x (var ?y) ?a) (I (= (var ?x) (var ?y))))"
-    )]);
+
+    ]);
+
     //     rs.extend(vec![
     //         rw!("R-definition";
     //             "(def R ?t ?j ?w)"

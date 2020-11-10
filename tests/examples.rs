@@ -2,9 +2,11 @@ use egg::*;
 use semiring::rewrites::*;
 
 fn check_eq(x: &str, y:&str) {
+    let _ = env_logger::builder().is_test(true).try_init();
     let runner = Runner::default()
-        .with_iter_limit(60)
-        .with_node_limit(50_000)
+        .with_iter_limit(180)
+        .with_node_limit(100_000)
+        .with_time_limit(std::time::Duration::from_secs(60))
         .with_expr(&x.parse().unwrap())
         .with_expr(&y.parse().unwrap())
         .with_hook(|runner| {
@@ -19,6 +21,7 @@ fn check_eq(x: &str, y:&str) {
         .run(&rules());
     let lhs = runner.roots[0];
     let rhs = runner.roots[1];
+    runner.print_report();
     assert_eq!(runner.egraph.find(lhs), runner.egraph.find(rhs))
 }
 
@@ -106,13 +109,21 @@ fn sliding_window() {
                          (var w))
                       (* (I (<= (var j) (- (var t) 1)))
                          (I (<= 1 (var j))))))))
-      (* (I (> (- (var t) (var k)) 1))
-         (sum (var j)
+      (- (* (I (> (var t) 1))
+            (sum (var j)
               (sum (var w)
                    (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
                          (var w))
                       (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j)))))))))
+                         (I (<= 1 (var j))))))))
+         (* (* (I (> (var t) 1))
+               (I (<= (- (var t) (var k)) 1)))
+            (sum (var j)
+              (sum (var w)
+                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
+                         (var w))
+                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
+                         (I (<= 1 (var j))))))))))
    (- (sum (var j)
            (sum (var w)
                 (* (* (rel v (var j) (var w))
