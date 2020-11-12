@@ -1,7 +1,7 @@
 use egg::*;
 use semiring::rewrites::*;
 
-fn check_eq(x: &str, y:&str) {
+fn check_eq(x: &str, y: &str) {
     let _ = env_logger::builder().is_test(true).try_init();
     let runner = Runner::default()
         .with_iter_limit(1000)
@@ -42,7 +42,8 @@ fn check_eq(x: &str, y:&str) {
 
 #[test]
 fn apsp() {
-    check_eq("
+    check_eq(
+        "
 (sum (var w)
      (* (+ (rel E (var x) (var z) (var w))
            (sum (var y)
@@ -52,7 +53,8 @@ fn apsp() {
                                 (rel E (var y) (var z) (var w2)))
                              (I (= (var w) (* (var w1) (var w2)))))))))
         (var w)))
-", "
+",
+        "
 (+ (sum (var w)
         (* (var w)
            (rel E (var x) (var z) (var w))))
@@ -62,13 +64,14 @@ fn apsp() {
                    (rel R (var x) (var y) (var w1))))
            (sum (var w2)
                 (* (var w2)
-                   (rel E (var y) (var z) (var w2)))))))"
+                   (rel E (var y) (var z) (var w2)))))))",
     )
 }
 
 #[test]
 fn running_total() {
-    check_eq("
+    check_eq(
+        "
 (sum (var w)
      (sum (var j)
           (* (* (var w) (* (I (<= 1 (var j)))
@@ -78,7 +81,8 @@ fn running_total() {
                 (* (rel R (- (var t) 1) (var j) (var w))
                    (* (I (< (var j) (var t)))
                       (I (> (var t) 1))))))))
-", "
+",
+        "
 (+ (* (I (> (var t) 1))
       (sum (var j)
            (sum (var w)
@@ -91,13 +95,14 @@ fn running_total() {
              (* (* (rel v (var j) (var w))
                    (var w))
                 (* (I (= (var t) (var j)))
-                   (I (<= 1 (var j))))))))"
+                   (I (<= 1 (var j))))))))",
     )
 }
 
 #[test]
 fn sliding_window() {
-    check_eq("
+    check_eq(
+        "
 (+ (- (* (I (> (var t) 1))
          (sum (var j)
               (sum (var w)
@@ -126,7 +131,8 @@ fn sliding_window() {
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
-", "
+",
+        "
 (+ (* (I (> (var t) 1))
       (- (sum (var j)
               (sum (var w)
@@ -151,6 +157,6 @@ fn sliding_window() {
                 (* (* (rel v (var j) (var w))
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))"
+                      (I (<= 1 (var j)))))))))",
     )
 }

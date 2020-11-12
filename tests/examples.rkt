@@ -8,6 +8,7 @@
                                 (rel E (var y) (var z) (var w2)))
                              (I (= (var w) (* (var w1) (var w2)))))))))
         (var w)))
+
 ;; apsp-r
 (+ (sum (var w)
         (* (var w)
@@ -19,6 +20,7 @@
            (sum (var w2)
                 (* (var w2)
                    (rel E (var y) (var z) (var w2)))))))
+
 ;; apsp-1
 (+ (sum (var w)
         (* (var w)
@@ -31,6 +33,7 @@
                                 (I (= (var w) (* (var w1) (var w2)))))
                              (* (rel R (var x) (var y) (var w1))
                                 (rel E (var y) (var z) (var w2)))))))))
+
 ;; apsp-2
 (+ (sum (var w)
         (* (var w)
@@ -43,6 +46,7 @@
                      (sum (var w)
                           (* (var w)
                              (I (= (var w) (* (var w1) (var w2)))))))))))
+
 ;; apsp-3
 (+ (sum (var w)
         (* (var w)
@@ -53,6 +57,7 @@
                   (* (* (rel R (var x) (var y) (var w1))
                         (rel E (var y) (var z) (var w2)))
                      (* (var w1) (var w2)))))))
+
 ;; apsp-4
 (+ (sum (var w)
         (* (var w)
@@ -64,6 +69,7 @@
                         (var w1))
                      (* (rel E (var y) (var z) (var w2))
                         (var w2)))))))
+
 ;; running-total-l
 (sum (var w)
      (sum (var j)
@@ -74,6 +80,7 @@
                 (* (rel R (- (var t) 1) (var j) (var w))
                    (* (I (< (var j) (var t)))
                       (I (> (var t) 1))))))))
+
 ;; runnin-total-r
 (+ (* (I (> (var t) 1))
       (sum (var j)
@@ -88,6 +95,7 @@
                    (var w))
                 (* (I (= (var t) (var j)))
                    (I (<= 1 (var j))))))))
+
 ;; sliding-window-l
 (- (sum (var w)
      (sum (var j)
@@ -107,6 +115,7 @@
                 (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
                    (* (I (< (var j) (- (var t) (var k))))
                       (I (> (- (var t) (var k)) 1)))))))))
+
 ;; sliding-window-l
 (- (sum (var w)
      (sum (var j)
@@ -126,6 +135,7 @@
                 (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
                    (* (I (< (var j) (- (var t) (var k))))
                       (I (> (- (var t) (var k)) 1)))))))))
+
 ;; sliding-window-1
 (- (+ (* (I (> (var t) 1))
          (sum (var j)
@@ -153,6 +163,7 @@
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
+
 ;; sliding-window-2
 (+ (- (* (I (> (var t) 1))
          (sum (var j)
@@ -180,6 +191,7 @@
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
+
 ;; sliding-window-3
 (+ (- (* (I (> (var t) 1))
          (sum (var j)
@@ -207,6 +219,7 @@
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
+
 ;; sliding-window-4
 (+ (- (* (I (> (var t) 1))
          (sum (var j)
@@ -371,3 +384,23 @@
                       (var w))
                    (* (I (= (- (var t) (var k)) (var j)))
                       (I (<= 1 (var j)))))))))
+
+;; sliding-window-l
+(- (sum (var w)
+     (sum (var j)
+          (* (* (var w) (* (I (<= 1 (var j)))
+                           (I (<= (var j) (var t)))))
+             (+ (* (I (= (var t) (var j)))
+                   (rel v (var j) (var w)))
+                (* (rel R (- (var t) 1) (var j) (var w))
+                   (* (I (< (var j) (var t)))
+                      (I (> (var t) 1))))))))
+   (sum (var w)
+     (sum (var j)
+          (* (* (var w) (* (I (<= 1 (var j)))
+                           (I (<= (var j) (- (var t) (var k))))))
+             (+ (* (I (= (- (var t) (var k)) (var j)))
+                   (rel v (var j) (var w)))
+                (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
+                   (* (I (< (var j) (- (var t) (var k))))
+                      (I (> (- (var t) (var k)) 1)))))))))

@@ -38,10 +38,10 @@ impl Analysis<Semiring> for SemiringAnalysis {
                     to.constant = Some(c_from);
                 }
             }
-            // TODO Not sure how to merge fingerprints
+            // Classes to be merged must agree on the fingerprints.
             if let Some(fp_from) = from.fingerprint {
-                if let Some(_fp_to) = &to.fingerprint {
-                    // Do nothing for now
+                if let Some(fp_to) = &to.fingerprint {
+                    assert_eq!(&fp_from, fp_to, "merging classes with different constants");
                 } else {
                     to.fingerprint = Some(fp_from);
                 }
@@ -83,6 +83,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
             egraph.union(id, const_id);
         }
     }
+    fn pre_union(_egraph: &egg::EGraph<Semiring, Self>, _id1: Id, _id2: Id) {}
 }
 
 fn combine_fp<F>(x: &Option<Vec<i32>>, y: &Option<Vec<i32>>, f: F) -> Option<Vec<i32>>

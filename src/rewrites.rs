@@ -115,7 +115,6 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         rw!("hack2"; "(+ (- ?a ?b) ?c)" => "(- ?a (- ?b ?c))"),
         rw!("hack3"; "(* (I (<= ?t 0)) (rel ?R ?t ?j ?w))" => "0"),
         rw!("hack4"; "(I (<= (- ?t ?k) 1))" => "(I (<= (- (- ?t ?k) 1) 0))"),
-
     ];
     rs.extend(
         vec![
