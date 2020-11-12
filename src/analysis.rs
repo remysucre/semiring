@@ -1,12 +1,13 @@
 use egg::*;
-// use rand::prelude::*;
-use std::collections::HashSet;
+use rand::prelude::*;
+use std::collections::{HashSet, hash_map::DefaultHasher};
+use std::hash::{Hash, Hasher};
 
 use crate::lang::*;
 use crate::EGraph;
 
 // Initial length of fingerprint vector
-// const FP_LEN: usize = 32;
+const FP_LEN: usize = 32;
 
 #[derive(Default, Clone)]
 pub struct SemiringAnalysis;
@@ -99,10 +100,8 @@ where
 fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     let fp = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
-        // Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
-        // Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
-        Semiring::Num(_n) => None,
-        Semiring::Var(_v) => None,
+        Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
+        Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
         Semiring::Add([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x + y),
         Semiring::Min([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x - y),
         Semiring::Mul([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x * y),
@@ -112,6 +111,19 @@ fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
         Semiring::Eq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x == y { 1 } else { 0 }),
         Semiring::Gt([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x > y { 1 } else { 0 }),
         Semiring::Geq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x >= y { 1 } else { 0 }),
+        Semiring::Rel(args) => {
+            assert!(args.len() >= 2, "relation with no argument not implemented");
+            let mut fingerprints =  vec![];
+            for i in 0..FP_LEN {
+                let mut hasher = DefaultHasher::new();
+                args[0].hash(&mut hasher);
+                for j in 1..args.len() {
+                    fp(&args[j]).as_deref()?[i].hash(&mut hasher);
+                }
+                fingerprints.push(hasher.finish() as i32);
+            }
+            Some(fingerprints)
+        },
         _ => None,
     }
 }
