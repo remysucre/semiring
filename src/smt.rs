@@ -20,6 +20,7 @@ pub fn solve_eqs(runner: &mut Runner<Semiring, SemiringAnalysis>) -> Result<(), 
                 let mut extractor = Extractor::new(&runner.egraph, AstSize);
                 let (_, e_1) = extractor.find_best(*c_1);
                 let (_, e_2) = extractor.find_best(*c_2);
+                // TODO replace the following with Rosette
                 let local_runner = Runner::default()
                     .with_expr(&e_1)
                     .with_expr(&e_2)
