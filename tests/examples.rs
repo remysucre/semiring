@@ -40,9 +40,38 @@ fn check_eq(x: &str, y: &str) {
     assert_eq!(runner.egraph.find(lhs), runner.egraph.find(rhs))
 }
 
-#[test]
-fn apsp() {
-    check_eq(
+// #[test]
+// fn apsp() {
+//     check_eq(
+//         "
+// (sum (var w)
+//      (* (+ (rel E (var x) (var z) (var w))
+//            (sum (var y)
+//                 (sum (var w1)
+//                      (sum (var w2)
+//                           (* (* (rel R (var x) (var y) (var w1))
+//                                 (rel E (var y) (var z) (var w2)))
+//                              (I (= (var w) (* (var w1) (var w2)))))))))
+//         (var w)))
+// ",
+//         "
+// (+ (sum (var w)
+//         (* (var w)
+//            (rel E (var x) (var z) (var w))))
+//    (sum (var y)
+//         (* (sum (var w1)
+//                 (* (var w1)
+//                    (rel R (var x) (var y) (var w1))))
+//            (sum (var w2)
+//                 (* (var w2)
+//                    (rel E (var y) (var z) (var w2)))))))",
+//     )
+// }
+
+test_fn! {
+    apsp_sat, rules(),
+    runner = Runner::default()
+        .with_iter_limit(60),
         "
 (sum (var w)
      (* (+ (rel E (var x) (var z) (var w))
@@ -53,110 +82,78 @@ fn apsp() {
                                 (rel E (var y) (var z) (var w2)))
                              (I (= (var w) (* (var w1) (var w2)))))))))
         (var w)))
-",
+" =>
         "
 (+ (sum (var w)
         (* (var w)
            (rel E (var x) (var z) (var w))))
    (sum (var y)
-        (* (sum (var w1)
-                (* (var w1)
-                   (rel R (var x) (var y) (var w1))))
+        (* (rel S (var x) (var y))
            (sum (var w2)
                 (* (var w2)
-                   (rel E (var y) (var z) (var w2)))))))",
-    )
+                   (rel E (var y) (var z) (var w2)))))))
+"
 }
 
-#[test]
-fn running_total() {
-    check_eq(
-        "
-(sum (var w)
-     (sum (var j)
-          (* (* (var w) (* (I (<= 1 (var j)))
-                           (I (<= (var j) (var t)))))
-             (+ (* (I (= (var t) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (var t) 1) (var j) (var w))
-                   (* (I (< (var j) (var t)))
-                      (I (> (var t) 1))))))))
-",
-        "
-(+ (* (I (> (var t) 1))
-      (sum (var j)
-           (sum (var w)
-                (* (* (rel R (- (var t) 1) (var j) (var w))
-                      (var w))
-                   (* (I (<= (var j) (- (var t) 1)))
-                      (I (<= 1 (var j))))))))
-   (sum (var j)
-        (sum (var w)
-             (* (* (rel v (var j) (var w))
-                   (var w))
-                (* (I (= (var t) (var j)))
-                   (I (<= 1 (var j))))))))",
-    )
-}
+// #[test]
+// fn running_total() {
+//     check_eq(
+//         "
+// (sum (var w)
+//      (sum (var j)
+//           (* (* (var w) (* (I (<= 1 (var j)))
+//                            (I (<= (var j) (var t)))))
+//              (+ (* (I (= (var t) (var j)))
+//                    (rel v (var j) (var w)))
+//                 (* (rel R (- (var t) 1) (var j) (var w))
+//                    (* (I (< (var j) (var t)))
+//                       (I (> (var t) 1))))))))
+// ",
+//         "
+// (+ (* (I (> (var t) 1))
+//       (sum (var j)
+//            (sum (var w)
+//                 (* (* (rel R (- (var t) 1) (var j) (var w))
+//                       (var w))
+//                    (* (I (<= (var j) (- (var t) 1)))
+//                       (I (<= 1 (var j))))))))
+//    (sum (var j)
+//         (sum (var w)
+//              (* (* (rel v (var j) (var w))
+//                    (var w))
+//                 (* (I (= (var t) (var j)))
+//                    (I (<= 1 (var j))))))))",
+//     )
+// }
 
-#[test]
-fn sliding_window() {
-    check_eq(
-        "
-(+ (- (* (I (> (var t) 1))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (var t) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (var t) 1)))
-                         (I (<= 1 (var j))))))))
-      (* (- (I (> (var t) 1))
-            (* (I (> (var t) 1))
-               (I (<= (- (var t) (var k)) 1))))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j)))))))))
-   (- (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (var t) (var j)))
-                      (I (<= 1 (var j)))))))
-      (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))
-",
-        "
-(+ (* (I (> (var t) 1))
-      (- (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (var t) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (var t) 1)))
-                         (I (<= 1 (var j)))))))
-         (sum (var j)
-              (sum (var w)
-                   (* (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-                         (var w))
-                      (* (I (<= (var j) (- (- (var t) (var k)) 1)))
-                         (I (<= 1 (var j)))))))))
-   (- (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (var t) (var j)))
-                      (I (<= 1 (var j)))))))
-      (sum (var j)
-           (sum (var w)
-                (* (* (rel v (var j) (var w))
-                      (var w))
-                   (* (I (= (- (var t) (var k)) (var j)))
-                      (I (<= 1 (var j)))))))))",
-    )
-}
+// test_fn! {
+//     running_total_sat, rules(),
+//     runner = Runner::default()
+//         .with_node_limit(500_000)
+//         .with_iter_limit(60),
+//         "
+// (sum (var w)
+//      (sum (var j)
+//           (* (* (var w) (* (I (<= 1 (var j)))
+//                            (I (<= (var j) (var t)))))
+//              (+ (* (I (= (var t) (var j)))
+//                    (rel v (var j) (var w)))
+//                 (* (rel R (- (var t) 1) (var j) (var w))
+//                    (* (I (< (var j) (var t)))
+//                       (I (> (var t) 1))))))))
+// " =>
+//         "
+// (+ (* (I (> (var t) 1))
+//       (sum (var j)
+//            (sum (var w)
+//                 (* (* (rel R (- (var t) 1) (var j) (var w))
+//                       (var w))
+//                    (* (I (<= (var j) (- (var t) 1)))
+//                       (I (<= 1 (var j))))))))
+//    (sum (var j)
+//         (sum (var w)
+//              (* (* (rel v (var j) (var w))
+//                    (var w))
+//                 (* (I (= (var t) (var j)))
+//                    (I (<= 1 (var j))))))))"
+// }

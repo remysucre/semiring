@@ -4,50 +4,36 @@ use semiring::lang::*;
 use semiring::rewrites::*;
 use std::time;
 
+struct SemiringCost;
+
+impl CostFunction<Semiring> for SemiringCost {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &Semiring, mut costs: C) -> Self::Cost
+    where C: FnMut(Id) -> Self::Cost
+    {
+        let op_cost = match enode {
+            Semiring::Symbol(s) => if s.as_str() == "R" { 1000 } else { 0 },
+            _ => 0
+        };
+        enode.fold(op_cost, |sum, id| sum + costs(id))
+    }
+}
+
 fn main() {
-    env_logger::init();
-    let r = Runner::<Semiring, SemiringAnalysis>::default()
-        .with_time_limit(time::Duration::from_secs(60))
-        .with_node_limit(50_000)
-        .with_iter_limit(500)
-        .with_expr(
-            &"(def RT (var t))"
-                //                        &"
-                // (+ (* (I (> (var t) 1))
-                //       (sum (var j)
-                //            (sum (var w)
-                //                 (* (* (rel R (- (var t) 1) (var j) (var w))
-                //                       (var w))
-                //                    (* (I (<= (var j) (- (var t) 1)))
-                //                       (I (<= 1 (var j))))))))
-                //    (sum (var j)
-                //         (sum (var w)
-                //              (* (* (rel v (var j) (var w))
-                //                    (var w))
-                //                 (* (I (= (var t) (var j)))
-                //                    (I (<= 1 (var j))))))))
-                // "
-                .parse()
-                .unwrap(),
-        )
-        .with_expr(
-            &"(+ (* (I (> (var t) 1)) (def RT-rhs (- (var t) 1))) (vec (var t)))"
-                //                         &"
-                // (sum (var w)
-                //      (sum (var j)
-                //           (* (* (var w) (* (I (<= 1 (var j)))
-                //                            (I (<= (var j) (var t)))))
-                //              (+ (* (I (= (var t) (var j)))
-                //                    (rel v (var j) (var w)))
-                //                 (* (rel R (- (var t) 1) (var j) (var w))
-                //                    (* (I (< (var j) (var t)))
-                //                       (I (> (var t) 1))))))))
-                // "
-                .parse()
-                .unwrap(),
-        )
-        // .with_hook(solve_eqs)
-        .run(&rules());
-    r.print_report();
-    assert_eq!(r.egraph.find(r.roots[0]), r.egraph.find(r.roots[1]));
+    let start = "(sum (var w)
+     (* (+ (rel E (var x) (var z) (var w))
+           (sum (var y)
+                (sum (var w1)
+                     (sum (var w2)
+                          (* (* (rel R (var x) (var y) (var w1))
+                                (rel E (var y) (var z) (var w2)))
+                             (I (= (var w) (* (var w1) (var w2)))))))))
+        (var w)))".parse().unwrap();
+    let runner = Runner::default().with_expr(&start).with_iter_limit(60).run(&rules());
+    let (egraph, root) = (runner.egraph, runner.roots[0]);
+
+    let mut extractor = Extractor::new(&egraph, SemiringCost);
+    let (best_cost, best) = extractor.find_best(root);
+    assert_eq!(best_cost, 0);
+    println!("{}", best.pretty(40));
 }

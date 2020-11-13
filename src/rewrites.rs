@@ -107,19 +107,19 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
         // rw!("pow0"; "(pow ?x 0)" => "1"),
-        rw!("mul-1"; "(* ?a 1)" => "?a"),
-        rw!("mul-0"; "(* ?a 0)" => "0"),
-        rw!("add-0"; "(+ ?a 0)" => "?a"),
-        rw!("sum-0"; "(sum ?i 0)" => "0"),
-        rw!("stupid"; "(* (- ?a ?b) ?c)" => "(- (* ?a ?c) (* ?b ?c))"),
-        rw!("hack2"; "(+ (- ?a ?b) ?c)" => "(- ?a (- ?b ?c))"),
-        rw!("hack3"; "(* (I (<= ?t 0)) (rel ?R ?t ?j ?w))" => "0"),
-        rw!("hack4"; "(I (<= (- ?t ?k) 1))" => "(I (<= (- (- ?t ?k) 1) 0))"),
+        // rw!("mul-1"; "(* ?a 1)" => "?a"),
+        // rw!("mul-0"; "(* ?a 0)" => "0"),
+        // rw!("add-0"; "(+ ?a 0)" => "?a"),
+        // rw!("sum-0"; "(sum ?i 0)" => "0"),
+        // rw!("stupid"; "(* (- ?a ?b) ?c)" => "(- (* ?a ?c) (* ?b ?c))"),
+        // rw!("hack2"; "(+ (- ?a ?b) ?c)" => "(- ?a (- ?b ?c))"),
+        // rw!("hack3"; "(* (I (<= ?t 0)) (rel ?R ?t ?j ?w))" => "0"),
+        // rw!("hack4"; "(I (<= (- ?t ?k) 1))" => "(I (<= (- (- ?t ?k) 1) 0))"),
     ];
     rs.extend(
         vec![
             // subst rules
-            rw!("rrrstupid"; "(* (- ?a ?b) ?c)" <=> "(- (* ?a ?c) (* ?b ?c))"),
+            // rw!("rrrstupid"; "(* (- ?a ?b) ?c)" <=> "(- (* ?a ?c) (* ?b ?c))"),
             rw!("let-add";  "(let ?v ?e (+ ?a ?b))" <=> "(+ (let ?v ?e ?a) (let ?v ?e ?b))"),
             rw!("let-eq";   "(let ?v ?e (= ?a ?b))" <=> "(= (let ?v ?e ?a) (let ?v ?e ?b))"),
             // open term rules
@@ -127,7 +127,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
             rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
             rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
-            rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
+            // rw!("subtract";  "(- ?a ?b)" <=> "(+ ?a (* -1 ?b))"),
             // rw!("div-canon"; "(/ ?a ?b)" <=> "(* ?a (pow ?b -1))"),
             rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
             rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
@@ -145,17 +145,18 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     );
     rs.extend(vec![
         rw!("trivial"   ; "(sum ?w (* ?w (I (= ?x ?w))))"          => "?x"),
+        rw!("s-def"; "(sum ?w (* ?w (rel R ?x ?z ?w)))" => "(rel S ?x ?z)"),
         // NOTE lemmas
-        rw!("l-49";  "(I (< ?j ?t))" => "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
-        // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
-        rw!("l-51";  "(I (< ?j ?t))" => "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
-        rw!("l-52";  "(I (= ?j ?t))" => "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
-        rw!("l-53";  "(I (< ?j ?t))" => "(I (<= ?j (- ?t 1)))"),
-        // rw!("l-80";  "(I (<= ?j ?t))" <=> "(I (< (- ?j 1) ?t))"),
-        // rw!("l-81";  "(I (< ?j ?t))" <=> "(- (I (<= ?j ?t)) (I (= ?j ?t)))"),
-        // rw!("l-82";  "(I (<= ?j ?t))" <=> "(- (I (<= (- ?j 1) ?t)) (I (= (- ?j 1) ?t)))"),
-        rw!("nat"; "(* (I (> (- ?a ?b) ?c)) (I (> ?a ?c)))" => "(I (> (- ?a ?b) ?c))"),
-        rw!("exclusion" ; "(- 1 (I (<= ?a ?b)))" => "(I (> ?a ?b))"),
+        // rw!("l-49";  "(I (< ?j ?t))" => "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
+        // // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),
+        // rw!("l-51";  "(I (< ?j ?t))" => "(* (I (< ?j ?t)) (I (<= ?j ?t)))"),
+        // rw!("l-52";  "(I (= ?j ?t))" => "(* (I (= ?j ?t)) (I (<= ?j ?t)))"),
+        // rw!("l-53";  "(I (< ?j ?t))" => "(I (<= ?j (- ?t 1)))"),
+        // // rw!("l-80";  "(I (<= ?j ?t))" <=> "(I (< (- ?j 1) ?t))"),
+        // // rw!("l-81";  "(I (< ?j ?t))" <=> "(- (I (<= ?j ?t)) (I (= ?j ?t)))"),
+        // // rw!("l-82";  "(I (<= ?j ?t))" <=> "(- (I (<= (- ?j 1) ?t)) (I (= (- ?j 1) ?t)))"),
+        // rw!("nat"; "(* (I (> (- ?a ?b) ?c)) (I (> ?a ?c)))" => "(I (> (- ?a ?b) ?c))"),
+        // rw!("exclusion" ; "(- 1 (I (<= ?a ?b)))" => "(I (> ?a ?b))"),
     ]);
     rs
 }

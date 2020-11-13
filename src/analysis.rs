@@ -42,7 +42,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
             // Classes to be merged must agree on the fingerprints.
             if let Some(fp_from) = from.fingerprint {
                 if let Some(fp_to) = &to.fingerprint {
-                    assert_eq!(&fp_from, fp_to, "merging classes with different constants");
+                    assert_eq!(&fp_from, fp_to, "merging classes with different fingerprints");
                 } else {
                     to.fingerprint = Some(fp_from);
                 }
@@ -100,8 +100,10 @@ where
 fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
     let fp = |i: &Id| &egraph[*i].data.fingerprint;
     match enode {
-        Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
-        Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
+        // Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
+        // Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
+        Semiring::Num(n) => None,
+        Semiring::Var(_v) => None,
         Semiring::Add([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x + y),
         Semiring::Min([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x - y),
         Semiring::Mul([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x * y),
