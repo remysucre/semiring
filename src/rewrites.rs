@@ -24,8 +24,7 @@ impl Applier<Semiring, SemiringAnalysis> for CaptureAvoid {
         if v2_free_in_e {
             let mut subst = subst.clone();
             let sym = egraph.add(Semiring::Symbol(format!("_{}", eclass).into()));
-            let var = Semiring::Var(sym);
-            subst.insert(self.fresh, egraph.add(var));
+            subst.insert(self.fresh, sym);
             self.if_free.apply_one(egraph, eclass, &subst)
         } else {
             self.if_not_free.apply_one(egraph, eclass, &subst)
@@ -59,8 +58,7 @@ impl Applier<Semiring, SemiringAnalysis> for RenameSum {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let mut subst = subst.clone();
         let sym = egraph.add(Semiring::Symbol(format!("_{}", eclass).into()));
-        let var = Semiring::Var(sym);
-        subst.insert(self.fresh, egraph.add(var));
+        subst.insert(self.fresh, sym);
         self.e.apply_one(egraph, eclass, &subst)
     }
 }
@@ -82,12 +80,13 @@ fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[subst[b]].data.free.contains(&subst[x])
 }
 
+// FIXME change all sums to take symbols
 pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     let mut rs = vec![
         rw!("let-const";
             "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
-        rw!("let-var-same"; "(let (var ?v1) ?e (var ?v1))" => "?e"),
-        rw!("let-var-diff"; "(let (var ?v1) ?e (var ?v2))" => "(var ?v2)"
+        rw!("let-var-same"; "(let ?v1 ?e ?v1)" => "?e"),
+        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
         rw!("pushdown-sum-free";
@@ -133,7 +132,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
             rw!("add-sum-dist"; "(sum ?x (+ ?a ?b))" <=> "(+ (sum ?x ?a) (sum ?x ?b))"),
             rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))"
-            if not_free(var("?x"), var("?b"))),
+                if not_free(var("?x"), var("?b"))),
             // NOTE bang!
             // rw!("exp-mul"; "(* (pow ?a ?b) (pow ?a ?c))" <=> "(pow ?a (+ ?b ?c))"),
             // rw!("base-mul"; "(* (pow ?a ?b) (pow ?c ?b))" <=> "(pow (* ?a ?c) ?b)"),
@@ -144,8 +143,9 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         .concat(),
     );
     rs.extend(vec![
-        rw!("trivial"   ; "(sum ?w (* ?w (I (= ?x ?w))))"          => "?x"),
-        rw!("s-def"; "(sum ?w (* ?w (rel R ?x ?z ?w)))" => "(rel S ?x ?z)"),
+        rw!("trivial"   ; "(sum ?w (* (var ?w) (I (= ?x (var ?w)))))"          => "?x"),
+        rw!("weight"    ; "(sum ?w (* (var ?w) (rel E ?x ?y (var ?w))))"     => "(weight ?x ?y)"),
+        // rw!("s-def"; "(sum ?w (* ?w (rel R ?x ?z ?w)))" => "(rel S ?x ?z)"),
         // NOTE lemmas
         // rw!("l-49";  "(I (< ?j ?t))" => "(+ (I (< ?j (- ?t 1))) (I (= ?j (- ?t 1))))"),
         // // rw!("l-50";  "0" <=> "(* (I (< ?j ?s)) (I (= ?j ?s)))"),

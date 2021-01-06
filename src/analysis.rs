@@ -52,7 +52,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
     }
 
     fn make(egraph: &EGraph, enode: &Semiring) -> Data {
-        let fvs = |i: &Id| egraph[*i].data.free.iter().cloned();
+        let fvs = |i: &Id| egraph[*i].data.free.iter().copied();
         let mut free = HashSet::default();
         match enode {
             Semiring::Var(v) => {
@@ -60,6 +60,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
             }
             Semiring::Let([v, a, b]) => {
                 free.extend(fvs(b));
+                // NOTE only do this if v free in b?
                 free.remove(v);
                 free.extend(fvs(a));
             }

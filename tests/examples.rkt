@@ -9,6 +9,15 @@
                              (I (= (var w) (* (var w1) (var w2)))))))))
         (var w)))
 
+;; apsp-norm
+(+ (sum (var w) (* (var w) (rel E (var x) (var z) (var w))))
+   (sum (var y)
+        (sum (var w1)
+             (sum (var w2)
+                  (* (* (rel R (var x) (var y) (var w1))
+                        (rel E (var y) (var z) (var w2)))
+                     (* w1 w2))))))
+
 ;; apsp-r
 (+ (sum (var w)
         (* (var w)
