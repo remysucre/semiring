@@ -153,7 +153,7 @@ pub fn elim_sums() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     );
     rs.extend(vec![
         rw!("trivial"   ; "(sum ?w (* (var ?w) (I (= ?x (var ?w)))))"          => "?x"),
-        rw!("weight"    ; "(sum ?w (* (var ?w) (rel E ?x ?y (var ?w))))"     => "(weight ?x ?y)"),
+        rw!("weight"    ; "(sum ?w (* (var ?w) (rel E ?x ?y (var ?w))))"     => "(weight (var ?w) ?x ?y)"),
     ]);
     rs
 }
