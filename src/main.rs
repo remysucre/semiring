@@ -22,14 +22,14 @@ impl CostFunction<Semiring> for VarCost {
 
 fn main() {
     let start = "(sum w
-         (* (+ (rel E (var x) (var z) (var w))
-                    (sum y
-                                    (sum w1
-                                                         (sum w2
-                                                                                   (* (* (rel R (var x) (var y) (var w1))
-                                                                                                                   (rel E (var y) (var z) (var w2)))
-                                                                                                                (I (= (var w) (* (var w1) (var w2)))))))))
-                 (var w)))".parse().unwrap();
+         (* (+ (I (rel E (var x) (var z) (var w)))
+               (sum y
+                    (sum w1
+                         (sum w2
+                              (* (* (I (rel R (var x) (var y) (var w1)))
+                                    (I (rel E (var y) (var z) (var w2))))
+                                 (I (= (var w) (* (var w1) (var w2)))))))))
+            (var w)))".parse().unwrap();
     let runner = Runner::default().with_expr(&start).run(&elim_sums());
     let (egraph, root) = (runner.egraph, runner.roots[0]);
 
