@@ -37,4 +37,11 @@ fn main() {
     let (best_cost, best) = extractor.find_best(root);
     println!("{}", best.pretty(40));
     println!("{}", best_cost);
+
+    let normalize_runner = Runner::default().with_expr(&best).run(&normalize());
+    let (egraph, root) = (normalize_runner.egraph, normalize_runner.roots[0]);
+    let mut extractor = Extractor::new(&egraph, AstSize);
+    let (best_cost, best) = extractor.find_best(root);
+    println!("{}", best.pretty(40));
+    println!("{}", best_cost);
 }
