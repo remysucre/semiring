@@ -33,7 +33,7 @@ fn check_eq(x: &str, y: &str) {
                 Ok(())
             }
         })
-        .run(&rules());
+        .run(&elim_sums());
     let lhs = runner.roots[0];
     let rhs = runner.roots[1];
     runner.print_report();
@@ -69,7 +69,7 @@ fn check_eq(x: &str, y: &str) {
 // }
 
 test_fn! {
-    apsp_sat, rules(),
+    apsp_sat, elim_sums(),
     runner = Runner::default()
         .with_iter_limit(60),
         "

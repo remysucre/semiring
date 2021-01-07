@@ -18,12 +18,10 @@ define_language! {
         "-" = Min([Id; 2]),
         "*" = Mul([Id; 2]),
 
-        // NOTE Remember the `var` tag for the
-        // aggregated variable, e.g. (sum (var i) ...)
+        // (sum x e) not (sum (var x) e)
         "sum" = Sum([Id; 2]),
 
-        // NOTE Remember the `var` tag for variables,
-        // e.g. let (var v1) (var v2) = e: e[v1 |-> v2]
+        // (let x e) not (let (var x) e)
         "let" = Let([Id; 3]),
 
         // Indicator, i.e. (I true) = 1, (I false) = 0

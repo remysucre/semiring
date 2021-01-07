@@ -1,13 +1,8 @@
 use egg::*;
-use rand::prelude::*;
-use std::collections::{HashSet, hash_map::DefaultHasher};
-use std::hash::{Hash, Hasher};
+use std::collections::HashSet;
 
 use crate::lang::*;
 use crate::EGraph;
-
-// Initial length of fingerprint vector
-const FP_LEN: usize = 32;
 
 #[derive(Default, Clone)]
 pub struct SemiringAnalysis;
@@ -18,7 +13,6 @@ pub struct Data {
     // Set of free variables by their class ID
     pub free: HashSet<Id>,
     pub constant: Option<Semiring>,
-    pub fingerprint: Option<Vec<i32>>,
 }
 
 impl Analysis<Semiring> for SemiringAnalysis {
@@ -37,14 +31,6 @@ impl Analysis<Semiring> for SemiringAnalysis {
                     assert_eq!(&c_from, c_to, "merging classes with different constants");
                 } else {
                     to.constant = Some(c_from);
-                }
-            }
-            // Classes to be merged must agree on the fingerprints.
-            if let Some(fp_from) = from.fingerprint {
-                if let Some(fp_to) = &to.fingerprint {
-                    assert_eq!(&fp_from, fp_to, "merging classes with different fingerprints");
-                } else {
-                    to.fingerprint = Some(fp_from);
                 }
             }
             true
@@ -71,11 +57,9 @@ impl Analysis<Semiring> for SemiringAnalysis {
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
         let constant = eval(egraph, enode);
-        let fingerprint = fingerprint(egraph, enode);
         Data {
             free,
             constant,
-            fingerprint,
         }
     }
 
@@ -86,49 +70,6 @@ impl Analysis<Semiring> for SemiringAnalysis {
         }
     }
     fn pre_union(_egraph: &egg::EGraph<Semiring, Self>, _id1: Id, _id2: Id) {}
-}
-
-fn combine_fp<F>(x: &Option<Vec<i32>>, y: &Option<Vec<i32>>, f: F) -> Option<Vec<i32>>
-where
-    F: Fn((&i32, &i32)) -> i32,
-{
-    let v_x = x.as_deref()?;
-    let v_y = y.as_deref()?;
-    assert_eq!(v_x.len(), v_y.len(), "fingerprint lengths differ");
-    Some(v_x.iter().zip(v_y.iter()).map(f).collect())
-}
-
-fn fingerprint(egraph: &EGraph, enode: &Semiring) -> Option<Vec<i32>> {
-    let fp = |i: &Id| &egraph[*i].data.fingerprint;
-    match enode {
-        // Semiring::Num(n) => Some((0..FP_LEN).map(|_| *n).collect()),
-        // Semiring::Var(_v) => Some((0..FP_LEN).map(|_| thread_rng().gen()).collect()),
-        Semiring::Num(n) => None,
-        Semiring::Var(_v) => None,
-        Semiring::Add([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x + y),
-        Semiring::Min([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x - y),
-        Semiring::Mul([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| x * y),
-        Semiring::Ind(b) => fp(b).clone(),
-        Semiring::Lt([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x < y { 1 } else { 0 }),
-        Semiring::Leq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x <= y { 1 } else { 0 }),
-        Semiring::Eq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x == y { 1 } else { 0 }),
-        Semiring::Gt([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x > y { 1 } else { 0 }),
-        Semiring::Geq([a, b]) => combine_fp(fp(a), fp(b), |(x, y)| if x >= y { 1 } else { 0 }),
-        Semiring::Rel(args) => {
-            assert!(args.len() >= 2, "relation with no argument not implemented");
-            let mut fingerprints =  vec![];
-            for i in 0..FP_LEN {
-                let mut hasher = DefaultHasher::new();
-                args[0].hash(&mut hasher);
-                for j in 1..args.len() {
-                    fp(&args[j]).as_deref()?[i].hash(&mut hasher);
-                }
-                fingerprints.push(hasher.finish() as i32);
-            }
-            Some(fingerprints)
-        },
-        _ => None,
-    }
 }
 
 fn eval(egraph: &EGraph, enode: &Semiring) -> Option<Semiring> {

@@ -1,24 +1,10 @@
 use egg::*;
-use semiring::analysis::*;
+// use semiring::analysis::*;
 use semiring::lang::*;
 use semiring::rewrites::*;
-use std::time;
+// use std::time;
 
-struct SemiringCost;
-
-impl CostFunction<Semiring> for SemiringCost {
-    type Cost = u64;
-    fn cost<C>(&mut self, enode: &Semiring, mut costs: C) -> Self::Cost
-    where C: FnMut(Id) -> Self::Cost
-    {
-        let op_cost = match enode {
-            Semiring::Symbol(s) => if s.as_str() == "R" { 1000 } else { 0 },
-            _ => 0
-        };
-        enode.fold(op_cost, |sum, id| sum + costs(id))
-    }
-}
-
+// TODO could optimze for summation depth too
 struct VarCost;
 
 impl CostFunction<Semiring> for VarCost {
@@ -44,7 +30,7 @@ fn main() {
                                 (rel E (var y) (var z) (var w2)))
                              (I (= (var w) (* (var w1) (var w2)))))))))
         (var w)))".parse().unwrap();
-    let runner = Runner::default().with_expr(&start).run(&rules());
+    let runner = Runner::default().with_expr(&start).run(&elim_sums());
     let (egraph, root) = (runner.egraph, runner.roots[0]);
 
     let mut extractor = Extractor::new(&egraph, VarCost);
