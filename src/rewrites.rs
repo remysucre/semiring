@@ -177,7 +177,7 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         // rw!("let-const"; "(let ?v1 ?e ?n))" => "?n" if is_const(var("?n"))),
         rw_1("let-var-same", "(let ?v1 ?e (var ?v1))", "?e"),
         rw!("let-var-diff";
-            "(let (var ?v1) ?e (var ?v2))" => {
+            "(let ?v1 ?e (var ?v2))" => {
                 Destroy { e: "(var ?v2)".parse::<Pattern<Semiring>>().unwrap() }
             } if is_not_same_var(var("?v1"), var("?v2"))),
         rw_1("let-sum-same", "(let ?v1 ?e (sum ?v1 ?body))", "(sum ?v1 ?body)",),
@@ -191,6 +191,7 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             } if is_not_same_var(var("?v1"), var("?v2"))),
         rw_1("let-add"  , "(let ?v ?e (+ ?a ?b))", "(+ (let ?v ?e ?a) (let ?v ?e ?b))",),
         rw_1("let-eq"   , "(let ?v ?e (= ?a ?b))", "(= (let ?v ?e ?a) (let ?v ?e ?b))",),
-        rw_1("subtract" , "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
+        rw_1("div" , "(/ ?a ?b)", "(* ?a (inv ?b))"),
+        // rw_1("subtract" , "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
     ]
 }
