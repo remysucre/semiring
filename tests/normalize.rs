@@ -77,8 +77,8 @@ fn window_norm() {
           (* (* (var w) (* (I (<= 1 (var j)))
                            (I (<= (var j) (var t)))))
              (+ (* (I (= (var t) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (var t) 1) (var j) (var w))
+                   (I (rel v (var j) (var w))))
+                (* (I (rel R (- (var t) 1) (var j) (var w)))
                    (* (I (< (var j) (var t)))
                       (I (> (var t) 1))))))))
    (sum w
@@ -86,39 +86,71 @@ fn window_norm() {
           (* (* (var w) (* (I (<= 1 (var j)))
                            (I (<= (var j) (- (var t) (var k))))))
              (+ (* (I (= (- (var t) (var k)) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
+                   (I (rel v (var j) (var w))))
+                (* (I (rel R (- (- (var t) (var k)) 1) (var j) (var w)))
                    (* (I (< (var j) (- (var t) (var k))))
                       (I (> (- (var t) (var k)) 1)))))))))");
     assert_eq!(e, "(-
-  (+ (sum w
-      (sum j
-        (* (* (var w)
-            (* (I (<= 1 (var j)))
+  (+
+    (sum
+      w
+      (sum
+        j
+        (*
+          (*
+            (var w)
+            (*
+              (I (<= 1 (var j)))
               (I (<= (var j) (var t)))))
-          (* (I (= (var j) (var t)))
-            (rel v (var j) (var w))))))
-    (sum w
-      (sum j
-        (* (* (var w)
-            (* (I (<= 1 (var j)))
+          (*
+            (I (= (var j) (var t)))
+            (I (rel v (var j) (var w)))))))
+    (sum
+      w
+      (sum
+        j
+        (*
+          (*
+            (var w)
+            (*
+              (I (<= 1 (var j)))
               (I (<= (var j) (var t)))))
-          (* (rel R (- (var t) 1) (var j) (var w))
-            (* (I (< (var j) (var t)))
+          (*
+            (I (rel R (- (var t) 1) (var j) (var w)))
+            (*
+              (I (< (var j) (var t)))
               (I (> (var t) 1))))))))
-  (+ (sum w
-      (sum j
-        (* (* (var w)
-            (* (I (<= 1 (var j)))
+  (+
+    (sum
+      w
+      (sum
+        j
+        (*
+          (*
+            (var w)
+            (*
+              (I (<= 1 (var j)))
               (I (<= (var j) (- (var t) (var k))))))
-          (* (rel v (var j) (var w))
+          (*
+            (I (rel v (var j) (var w)))
             (I (= (var j) (- (var t) (var k))))))))
-    (sum w
-      (sum j
-        (* (* (var w)
-            (* (I (<= 1 (var j)))
+    (sum
+      w
+      (sum
+        j
+        (*
+          (*
+            (var w)
+            (*
+              (I (<= 1 (var j)))
               (I (<= (var j) (- (var t) (var k))))))
-          (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
-            (* (I (< (var j) (- (var t) (var k))))
+          (*
+            (I (rel
+              R
+              (- (- (var t) (var k)) 1)
+              (var j)
+              (var w)))
+            (*
+              (I (< (var j) (- (var t) (var k))))
               (I (> (- (var t) (var k)) 1)))))))))".parse().unwrap())
 }

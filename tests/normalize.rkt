@@ -24,8 +24,8 @@
           (* (* (var w) (* (I (<= 1 (var j)))
                            (I (<= (var j) (var t)))))
              (+ (* (I (= (var t) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (var t) 1) (var j) (var w))
+                   (I (rel v (var j) (var w))))
+                (* (I (rel R (- (var t) 1) (var j) (var w)))
                    (* (I (< (var j) (var t)))
                       (I (> (var t) 1))))))))
    (sum w
@@ -33,8 +33,8 @@
           (* (* (var w) (* (I (<= 1 (var j)))
                            (I (<= (var j) (- (var t) (var k))))))
              (+ (* (I (= (- (var t) (var k)) (var j)))
-                   (rel v (var j) (var w)))
-                (* (rel R (- (- (var t) (var k)) 1) (var j) (var w))
+                   (I (rel v (var j) (var w))))
+                (* (I (rel R (- (- (var t) (var k)) 1) (var j) (var w)))
                    (* (I (< (var j) (- (var t) (var k))))
                       (I (> (- (var t) (var k)) 1)))))))))
 
@@ -53,7 +53,7 @@
               (I (<= (var j) (var t)))))
           (*
             (I (= (var j) (var t)))
-            (rel v (var j) (var w))))))
+            (I (rel v (var j) (var w)))))))
     (sum
       w
       (sum
@@ -65,7 +65,7 @@
               (I (<= 1 (var j)))
               (I (<= (var j) (var t)))))
           (*
-            (rel R (- (var t) 1) (var j) (var w))
+            (I (rel R (- (var t) 1) (var j) (var w)))
             (*
               (I (< (var j) (var t)))
               (I (> (var t) 1))))))))
@@ -81,7 +81,7 @@
               (I (<= 1 (var j)))
               (I (<= (var j) (- (var t) (var k))))))
           (*
-            (rel v (var j) (var w))
+            (I (rel v (var j) (var w)))
             (I (= (var j) (- (var t) (var k))))))))
     (sum
       w
@@ -94,11 +94,11 @@
               (I (<= 1 (var j)))
               (I (<= (var j) (- (var t) (var k))))))
           (*
-            (rel
+            (I (rel
               R
               (- (- (var t) (var k)) 1)
               (var j)
-              (var w))
+              (var w)))
             (*
               (I (< (var j) (- (var t) (var k))))
               (I (> (- (var t) (var k)) 1)))))))))
