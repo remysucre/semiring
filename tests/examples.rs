@@ -68,32 +68,32 @@ fn check_eq(x: &str, y: &str) {
 //     )
 // }
 
-test_fn! {
-    apsp_sat, elim_sums(),
-    runner = Runner::default()
-        .with_iter_limit(60),
-        "
-(sum (var w)
-     (* (+ (rel E (var x) (var z) (var w))
-           (sum (var y)
-                (sum (var w1)
-                     (sum (var w2)
-                          (* (* (rel R (var x) (var y) (var w1))
-                                (rel E (var y) (var z) (var w2)))
-                             (I (= (var w) (* (var w1) (var w2)))))))))
-        (var w)))
-" =>
-        "
-(+ (sum (var w)
-        (* (var w)
-           (rel E (var x) (var z) (var w))))
-   (sum (var y)
-        (* (rel S (var x) (var y))
-           (sum (var w2)
-                (* (var w2)
-                   (rel E (var y) (var z) (var w2)))))))
-"
-}
+// test_fn! {
+//     apsp_sat, elim_sums(),
+//     runner = Runner::default()
+//         .with_iter_limit(60),
+//         "
+// (sum (var w)
+//      (* (+ (rel E (var x) (var z) (var w))
+//            (sum (var y)
+//                 (sum (var w1)
+//                      (sum (var w2)
+//                           (* (* (rel R (var x) (var y) (var w1))
+//                                 (rel E (var y) (var z) (var w2)))
+//                              (I (= (var w) (* (var w1) (var w2)))))))))
+//         (var w)))
+// " =>
+//         "
+// (+ (sum (var w)
+//         (* (var w)
+//            (rel E (var x) (var z) (var w))))
+//    (sum (var y)
+//         (* (rel S (var x) (var y))
+//            (sum (var w2)
+//                 (* (var w2)
+//                    (rel E (var y) (var z) (var w2)))))))
+// "
+// }
 
 // #[test]
 // fn running_total() {

@@ -49,3 +49,19 @@ impl Semiring {
         }
     }
 }
+
+// TODO could optimze for summation depth too
+pub struct VarCost;
+
+impl CostFunction<Semiring> for VarCost {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &Semiring, mut costs: C) -> Self::Cost
+    where C: FnMut(Id) -> Self::Cost
+    {
+        let op_cost = match enode {
+            Semiring::Sum(_) => 1000,
+            _ => 0
+        };
+        enode.fold(op_cost, |sum, id| sum + costs(id))
+    }
+}
