@@ -3,18 +3,13 @@ use egg::*;
 use semiring::lang::*;
 use semiring::rewrites::*;
 // use std::time;
+use std::io::{self, Read};
 
 fn main() {
-    let start = "(sum w
-         (* (+ (I (rel E (var x) (var z) (var w)))
-               (sum y
-                    (sum w1
-                         (sum w2
-                              (* (* (I (rel R (var x) (var y) (var w1)))
-                                    (I (rel E (var y) (var z) (var w2))))
-                                 (I (= (var w) (* (var w1) (var w2)))))))))
-            (var w)))".parse().unwrap();
-    let runner = Runner::default().with_expr(&start).run(&elim_sums());
+    let mut start = String::new();
+    io::stdin().read_to_string(&mut start).unwrap();
+    let runner = Runner::default().with_expr(&start.parse().unwrap())
+                                  .run(&elim_sums());
     let (egraph, root) = (runner.egraph, runner.roots[0]);
 
     let mut extractor = Extractor::new(&egraph, VarCost);
