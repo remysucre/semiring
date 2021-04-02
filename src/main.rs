@@ -1,5 +1,4 @@
 use egg::*;
-use egg::{rewrite as rw, *};
 // use semiring::analysis::*;
 use semiring::lang::*;
 use semiring::rewrites::*;
@@ -11,22 +10,23 @@ extern crate clap;
 use clap::App;
 
 fn main() {
-    // (+ (weight (var w) (var x) (var z))
-    //    (sum y (sum w1 (* (* (var w1) (I (rel R (var x) (var y) (var w1))))
-    //                      (weight (var w2) (var y) (var z))))))
+    // (sum ?w (* (I (rel R (var ?x) (var ?z) (var ?w))) (var ?w)))
+    // => (fun-g ?x ?z)
+    //
+    // (+ (weight (var w) (var x) (var z)) (sum y (sum w1 (* (* (var w1) (I (rel R (var x) (var y) (var w1)))) (weight (var w2) (var y) (var z))))))
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
 
     if let Some(matches) = matches.subcommand_matches("extract") {
-        let g = matches.value_of("G").unwrap();
-        println!("{}", g);
+        let g_var: Vec<_> = matches.value_of("G").unwrap().split("=>").collect();
+        let (g, var) = (g_var[0], g_var[1]);
         let mut start = String::new();
         io::stdin().read_to_string(&mut start).unwrap();
         let mut rls = rules();
         let extract_g = Rewrite::new(
             "extract-g",
             g.parse::<Pattern<Semiring>>().unwrap(),
-            "(fun-g)".parse::<Pattern<Semiring>>().unwrap(),
+            var.parse::<Pattern<Semiring>>().unwrap(),
         )
         .unwrap();
         rls.push(extract_g);
