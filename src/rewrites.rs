@@ -160,9 +160,21 @@ pub fn elim_sums() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
 
 pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     vec![
-        rw_1("pushdown-mul"     , "(* ?a (+ ?b ?c))"   , "(+ (* ?a ?b) (* ?a ?c))",),
-        rw_1("pushdown-mul-2"   , "(* (+ ?b ?c) ?a)"   , "(+ (* ?a ?b) (* ?a ?c))",),
-        rw_1("pushdown-sum-add" , "(sum ?i (+ ?a ?b))" , "(+ (sum ?i ?a) (sum ?i ?b))",),
+        rw_1(
+            "pushdown-mul",
+            "(* ?a (+ ?b ?c))",
+            "(+ (* ?a ?b) (* ?a ?c))",
+        ),
+        rw_1(
+            "pushdown-mul-2",
+            "(* (+ ?b ?c) ?a)",
+            "(+ (* ?a ?b) (* ?a ?c))",
+        ),
+        rw_1(
+            "pushdown-sum-add",
+            "(sum ?i (+ ?a ?b))",
+            "(+ (sum ?i ?a) (sum ?i ?b))",
+        ),
         rw!("pushdown-sum-bound";
             "(* ?b (sum ?x ?a))" => {
                 Destroy { e: "(sum ?x (* ?b ?a))".parse::<Pattern<Semiring>>().unwrap() }
@@ -180,7 +192,11 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             "(let ?v1 ?e (var ?v2))" => {
                 Destroy { e: "(var ?v2)".parse::<Pattern<Semiring>>().unwrap() }
             } if is_not_same_var(var("?v1"), var("?v2"))),
-        rw_1("let-sum-same", "(let ?v1 ?e (sum ?v1 ?body))", "(sum ?v1 ?body)",),
+        rw_1(
+            "let-sum-same",
+            "(let ?v1 ?e (sum ?v1 ?body))",
+            "(sum ?v1 ?body)",
+        ),
         rw!("let-sum-diff";
             "(let ?v1 ?e (sum ?v2 ?body))" => {
                 Destroy { e: CaptureAvoid {
@@ -189,9 +205,62 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
                 if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
                 }}
             } if is_not_same_var(var("?v1"), var("?v2"))),
-        rw_1("let-add"  , "(let ?v ?e (+ ?a ?b))", "(+ (let ?v ?e ?a) (let ?v ?e ?b))",),
-        rw_1("let-eq"   , "(let ?v ?e (= ?a ?b))", "(= (let ?v ?e ?a) (let ?v ?e ?b))",),
-        rw_1("div" , "(/ ?a ?b)", "(* ?a (inv ?b))"),
+        rw_1(
+            "let-add",
+            "(let ?v ?e (+ ?a ?b))",
+            "(+ (let ?v ?e ?a) (let ?v ?e ?b))",
+        ),
+        rw_1(
+            "let-eq",
+            "(let ?v ?e (= ?a ?b))",
+            "(= (let ?v ?e ?a) (let ?v ?e ?b))",
+        ),
+        rw_1("div", "(/ ?a ?b)", "(* ?a (inv ?b))"),
         // rw_1("subtract" , "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
     ]
+}
+
+pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
+    let mut rs = vec![
+        rw!("let-const"; "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
+        rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
+        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
+            if is_not_same_var(var("?v1"), var("?v2"))),
+        rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
+        rw!("pushdown-sum-free";
+            "(* ?b (sum ?x ?a))" =>
+            { RenameSum {
+                fresh: var("?fresh"),
+                e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+            }}
+            if free(var("?x"), var("?b"))),
+        rw!("let-sum-same"; "(let ?v1 ?e (sum ?v1 ?body))" => "(sum ?v1 ?body)"),
+        rw!("let-sum-diff";
+            "(let ?v1 ?e (sum ?v2 ?body))" =>
+            { CaptureAvoid {
+                fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
+                if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+            }}
+            if is_not_same_var(var("?v1"), var("?v2"))),
+    ];
+    rs.extend(
+        vec![
+            // subst rules
+            rw!("let-add";  "(let ?v ?e (+ ?a ?b))" <=> "(+ (let ?v ?e ?a) (let ?v ?e ?b))"),
+            rw!("let-eq";   "(let ?v ?e (= ?a ?b))" <=> "(= (let ?v ?e ?a) (let ?v ?e ?b))"),
+            // open term rules
+            rw!("add-comm";  "(+ ?a ?b)"        <=> "(+ ?b ?a)"),
+            rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
+            rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
+            rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
+            rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
+            rw!("add-mul-dist"; "(* (+ ?a ?b) ?c)" <=> "(+ (* ?a ?c) (* ?b ?c))"),
+            rw!("add-sum-dist"; "(sum ?x (+ ?a ?b))" <=> "(+ (sum ?x ?a) (sum ?x ?b))"),
+            rw!("pushdown-sum-bound"; "(* ?b (sum ?x ?a))" <=> "(sum ?x (* ?b ?a))"
+                if not_free(var("?x"), var("?b"))),
+        ]
+        .concat(),
+    );
+    rs
 }

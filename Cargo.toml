@@ -11,3 +11,4 @@ edition = "2018"
 egg = { path = "../egg" }
 env_logger = {version = "0.7", default-features = false}
 rand = "0.7"
+clap = {version = "2.33", features = ["yaml"]}

@@ -19,7 +19,8 @@ fn norm(e: &str) -> RecExpr<Semiring> {
 
 #[test]
 fn apsp_norm() {
-    let e = norm(&"(sum w
+    let e = norm(
+        &"(sum w
          (* (+ (I (rel E (var x) (var z) (var w)))
                (sum y
                     (sum w1
@@ -27,19 +28,26 @@ fn apsp_norm() {
                               (* (* (I (rel R (var x) (var y) (var w1)))
                                     (I (rel E (var y) (var z) (var w2))))
                                  (I (= (var w) (* (var w1) (var w2)))))))))
-            (var w)))");
-    assert_eq!(e, "(+
+            (var w)))",
+    );
+    assert_eq!(
+        e,
+        "(+
   (weight (var w) (var x) (var z))
   (sum y
     (sum w1
       (* (weight (var w2) (var y) (var z))
         (* (var w1)
-          (I (rel R (var x) (var y) (var w1))))))))".parse().unwrap())
+          (I (rel R (var x) (var y) (var w1))))))))"
+            .parse()
+            .unwrap()
+    )
 }
 
 #[test]
 fn centrality_norm() {
-    let e = norm(&"(sum t
+    let e = norm(
+        &"(sum t
      (* (I (= (rel D (var s) (var t))
               (+ (rel D (var s) (var v))
                  (rel D (var v) (var t)))))
@@ -48,8 +56,11 @@ fn centrality_norm() {
                  (sum u (* (* (rel sigma (var u) (var t)) (I (rel E (var v) (var u))))
                            (I (= (rel D (var v) (var t))
                                  (+ 1 (rel D (var u) (var t)))))))))
-           (rel sigma (var s) (var t)))))");
-   assert_eq!(e, "(+
+           (rel sigma (var s) (var t)))))",
+    );
+    assert_eq!(
+        e,
+        "(+
   (sum t
     (* (I (= (rel D (var s) (var t))
           (+ (rel D (var s) (var v))
@@ -67,12 +78,16 @@ fn centrality_norm() {
             (* (* (rel sigma (var u) (var t))
                 (I (rel E (var v) (var u))))
               (I (= (rel D (var v) (var t))
-                  (+ 1 (rel D (var u) (var t))))))))))))".parse().unwrap())
+                  (+ 1 (rel D (var u) (var t))))))))))))"
+            .parse()
+            .unwrap()
+    )
 }
 
 #[test]
 fn window_norm() {
-    let e = norm(&"(- (sum w
+    let e = norm(
+        &"(- (sum w
      (sum j
           (* (* (var w) (* (I (<= 1 (var j)))
                            (I (<= (var j) (var t)))))
@@ -89,8 +104,11 @@ fn window_norm() {
                    (I (rel v (var j) (var w))))
                 (* (I (rel R (- (- (var t) (var k)) 1) (var j) (var w)))
                    (* (I (< (var j) (- (var t) (var k))))
-                      (I (> (- (var t) (var k)) 1)))))))))");
-    assert_eq!(e, "(-
+                      (I (> (- (var t) (var k)) 1)))))))))",
+    );
+    assert_eq!(
+        e,
+        "(-
   (+
     (sum
       w
@@ -152,5 +170,8 @@ fn window_norm() {
               (var w)))
             (*
               (I (< (var j) (- (var t) (var k))))
-              (I (> (- (var t) (var k)) 1)))))))))".parse().unwrap())
+              (I (> (- (var t) (var k)) 1)))))))))"
+            .parse()
+            .unwrap()
+    )
 }

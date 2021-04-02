@@ -57,10 +57,7 @@ impl Analysis<Semiring> for SemiringAnalysis {
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }
         let constant = eval(egraph, enode);
-        Data {
-            free,
-            constant,
-        }
+        Data { free, constant }
     }
 
     fn modify(egraph: &mut EGraph, id: Id) {

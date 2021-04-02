@@ -56,11 +56,34 @@ pub struct VarCost;
 impl CostFunction<Semiring> for VarCost {
     type Cost = u64;
     fn cost<C>(&mut self, enode: &Semiring, mut costs: C) -> Self::Cost
-    where C: FnMut(Id) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
     {
         let op_cost = match enode {
             Semiring::Sum(_) => 1000,
-            _ => 0
+            _ => 0,
+        };
+        enode.fold(op_cost, |sum, id| sum + costs(id))
+    }
+}
+
+pub struct GCost;
+
+impl CostFunction<Semiring> for GCost {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &Semiring, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let op_cost = match enode {
+            Semiring::Symbol(s) => {
+                if s == &Symbol::from("fun-g") {
+                    0
+                } else {
+                    100
+                }
+            }
+            _ => 100,
         };
         enode.fold(op_cost, |sum, id| sum + costs(id))
     }
