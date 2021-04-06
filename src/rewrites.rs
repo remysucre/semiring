@@ -179,8 +179,19 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             "(* ?b (sum ?x ?a))" => {
                 Destroy { e: "(sum ?x (* ?b ?a))".parse::<Pattern<Semiring>>().unwrap() }
             } if not_free(var("?x"), var("?b"))),
+        rw!("pushdown-sum-bound-2";
+            "(* (sum ?x ?a) ?b)" => {
+                Destroy { e: "(sum ?x (* ?b ?a))".parse::<Pattern<Semiring>>().unwrap() }
+            } if not_free(var("?x"), var("?b"))),
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" => {
+                Destroy { e: RenameSum {
+                    fresh: var("?fresh"),
+                    e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+                }}
+            } if free(var("?x"), var("?b"))),
+        rw!("pushdown-sum-free-2";
+            "(* (sum ?x ?a) ?b)" => {
                 Destroy { e: RenameSum {
                     fresh: var("?fresh"),
                     e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
