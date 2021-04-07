@@ -235,7 +235,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     let mut rs = vec![
         rw_1("0-*", "(* 0 ?e)", "0"),
         rw_1("0-+", "(+ 0 ?e)", "?e"),
-        // rw!("1-*"; "(* 1 ?e)" => "?e"),
+        rw!("1-*"; "(* 1 ?e)" => "?e"),
         rw!("let-const"; "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
         rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
         rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
