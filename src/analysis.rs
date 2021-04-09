@@ -11,7 +11,7 @@ pub struct SemiringAnalysis;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Data {
     // Set of free variables by their class ID
-    pub free: HashSet<Id>,
+    pub free: HashSet<Symbol>,
     pub constant: Option<Semiring>,
 }
 
@@ -41,18 +41,27 @@ impl Analysis<Semiring> for SemiringAnalysis {
         let fvs = |i: &Id| egraph[*i].data.free.iter().copied();
         let mut free = HashSet::default();
         match enode {
-            Semiring::Var(v) => {
+            Semiring::Symbol(v) => {
                 free.insert(*v);
             }
             Semiring::Let([v, a, b]) => {
                 free.extend(fvs(b));
                 // NOTE only do this if v free in b?
-                free.remove(v);
+                free.remove(&fvs(v).next().unwrap());
                 free.extend(fvs(a));
             }
             Semiring::Sum([v, a]) => {
                 free.extend(fvs(a));
-                free.remove(v);
+                free.remove(&fvs(v).next().unwrap());
+            }
+            Semiring::Rel(xs) =>
+                for x in xs[1..].iter() {
+                    free.extend(fvs(x));
+                }
+            Semiring::Other(_, xs) => {
+                for x in xs {
+                    free.extend(fvs(x));
+                }
             }
             _ => enode.for_each(|c| free.extend(&egraph[c].data.free)),
         }

@@ -8,7 +8,7 @@ define_language! {
         // All variables are tagged with var
         // to distinguish from relations
         // e.g. (var x)
-        "var" = Var(Id),
+        // "var" = Var(Id),
 
         // Relations are tagged with rel
         // e.g. (rel R (var x) (var y))

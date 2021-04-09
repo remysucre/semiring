@@ -13,7 +13,10 @@ fn is_not_same_var(v1: Var, v2: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool
 }
 
 fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
-    move |egraph, _, subst| egraph[subst[b]].data.free.contains(&subst[x])
+    move |egraph, _, subst| {
+        let v = egraph[subst[x]].data.free.iter().next().unwrap();
+        egraph[subst[b]].data.free.contains(&v)
+    }
 }
 
 fn not_free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
@@ -50,7 +53,7 @@ pub struct CaptureAvoid {
 impl Applier<Semiring, SemiringAnalysis> for CaptureAvoid {
     fn apply_one(&self, egraph: &mut EGraph, eclass: Id, subst: &Subst) -> Vec<Id> {
         let e = subst[self.e];
-        let v2 = subst[self.v2];
+        let v2 = egraph[subst[self.v2]].data.free.iter().next().unwrap();
         let v2_free_in_e = egraph[e].data.free.contains(&v2);
         if v2_free_in_e {
             let mut subst = subst.clone();
@@ -110,15 +113,15 @@ fn rw_1(
 pub fn elim_sums() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
     let mut rs = vec![
         rw!("let-const"; "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
-        rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
-        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
+        rw!("let-var-same"; "(let ?v1 ?e ?v1)" => "?e"),
+        rw!("let-var-diff"; "(let ?v1 ?e ?v2)" => "?v2"
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" =>
             { RenameSum {
                 fresh: var("?fresh"),
-                e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+                e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
         rw!("let-sum-same"; "(let ?v1 ?e (sum ?v1 ?body))" => "(sum ?v1 ?body)"),
@@ -127,7 +130,7 @@ pub fn elim_sums() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             { CaptureAvoid {
                 fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
                 if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
-                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 ?fresh ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
     ];
@@ -152,8 +155,8 @@ pub fn elim_sums() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         .concat(),
     );
     rs.extend(vec![
-        rw!("trivial"   ; "(sum ?w (* (var ?w) (I (= ?x (var ?w)))))"          => "?x"),
-        rw!("weight"    ; "(sum ?w (* (var ?w) (I (rel E ?x ?y (var ?w)))))"     => "(weight (var ?w) ?x ?y)"),
+        rw!("trivial"   ; "(sum ?w (* ?w (I (= ?x ?w))))"          => "?x"),
+        rw!("weight"    ; "(sum ?w (* ?w (I (rel E ?x ?y ?w))))"     => "(weight ?w ?x ?y)"),
     ]);
     rs
 }
@@ -187,21 +190,21 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             "(* ?b (sum ?x ?a))" => {
                 Destroy { e: RenameSum {
                     fresh: var("?fresh"),
-                    e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+                    e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
                 }}
             } if free(var("?x"), var("?b"))),
         rw!("pushdown-sum-free-2";
             "(* (sum ?x ?a) ?b)" => {
                 Destroy { e: RenameSum {
                     fresh: var("?fresh"),
-                    e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+                    e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
                 }}
             } if free(var("?x"), var("?b"))),
         // rw!("let-const"; "(let ?v1 ?e ?n))" => "?n" if is_const(var("?n"))),
-        rw_1("let-var-same", "(let ?v1 ?e (var ?v1))", "?e"),
+        rw_1("let-var-same", "(let ?v1 ?e ?v1)", "?e"),
         rw!("let-var-diff";
-            "(let ?v1 ?e (var ?v2))" => {
-                Destroy { e: "(var ?v2)".parse::<Pattern<Semiring>>().unwrap() }
+            "(let ?v1 ?e ?v2)" => {
+                Destroy { e: "?v2".parse::<Pattern<Semiring>>().unwrap() }
             } if is_not_same_var(var("?v1"), var("?v2"))),
         rw_1(
             "let-sum-same",
@@ -213,7 +216,7 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
                 Destroy { e: CaptureAvoid {
                 fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
                 if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
-                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 ?fresh ?body)))".parse().unwrap(),
                 }}
             } if is_not_same_var(var("?v1"), var("?v2"))),
         rw_1(
@@ -237,15 +240,15 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         rw_1("0-+", "(+ 0 ?e)", "?e"),
         rw!("1-*"; "(* 1 ?e)" => "?e"),
         rw!("let-const"; "(let ?v ?e ?c)" => "?c" if is_const(var("?c"))),
-        rw!("let-var-same"; "(let ?v1 ?e (var ?v1))" => "?e"),
-        rw!("let-var-diff"; "(let ?v1 ?e (var ?v2))" => "(var ?v2)"
+        rw!("let-var-same"; "(let ?v1 ?e ?v1)" => "?e"),
+        rw!("let-var-diff"; "(let ?v1 ?e ?v2)" => "?v2"
             if is_not_same_var(var("?v1"), var("?v2"))),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" =>
             { RenameSum {
                 fresh: var("?fresh"),
-                e: "(sum ?fresh (* ?b (let ?x (var ?fresh) ?a)))".parse().unwrap()
+                e: "(sum ?fresh (* ?b (let ?x ?fresh ?a)))".parse().unwrap()
             }}
             if free(var("?x"), var("?b"))),
         rw!("let-sum-same"; "(let ?v1 ?e (sum ?v1 ?body))" => "(sum ?v1 ?body)"),
@@ -254,7 +257,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             { CaptureAvoid {
                 fresh: var("?fresh"), v2: var("?v2"), e: var("?e"),
                 if_not_free: "(sum ?v2 (let ?v1 ?e ?body))".parse().unwrap(),
-                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 (var ?fresh) ?body)))".parse().unwrap(),
+                if_free: "(sum ?fresh (let ?v1 ?e (let ?v2 ?fresh ?body)))".parse().unwrap(),
             }}
             if is_not_same_var(var("?v1"), var("?v2"))),
     ];
