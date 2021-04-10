@@ -15,7 +15,7 @@ fn main() {
     //
     // (+ (weight (var w) (var x) (var z)) (sum y (sum w1 (* (* (var w1) (I (rel R (var x) (var y) (var w1)))) (weight (var w2) (var y) (var z))))))
     let yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
+    let matches = App::from(yaml).get_matches();
 
     if let Some(matches) = matches.subcommand_matches("extract") {
         let g_var: Vec<_> = matches.value_of("G").unwrap().split("=>").collect();

@@ -1,5 +1,6 @@
 use egg::*;
 use std::collections::HashSet;
+use std::cmp::Ordering;
 
 use crate::lang::*;
 use crate::EGraph;
@@ -17,23 +18,38 @@ pub struct Data {
 
 impl Analysis<Semiring> for SemiringAnalysis {
     type Data = Data;
-    fn merge(&self, to: &mut Data, from: Data) -> bool {
-        if *to == from {
-            false
-        } else {
-            // The free vars may differ due to constant folding
-            to.free.retain(|i| from.free.contains(i));
+    // fn merge(&self, to: &mut Data, from: Data) -> Option<Ordering> {
+    //     if *to == from {
+    //         false
+    //     } else {
+    //         // The free vars may differ due to constant folding
+    //         to.free.retain(|i| from.free.contains(i));
 
-            // Merged classes must agree on the constant value,
-            // if both have one.
-            if let Some(c_from) = from.constant {
-                if let Some(c_to) = &to.constant {
-                    assert_eq!(&c_from, c_to, "merging classes with different constants");
-                } else {
-                    to.constant = Some(c_from);
-                }
-            }
-            true
+    //         // Merged classes must agree on the constant value,
+    //         // if both have one.
+    //         if let Some(c_from) = from.constant {
+    //             if let Some(c_to) = &to.constant {
+    //                 assert_eq!(&c_from, c_to, "merging classes with different constants");
+    //             } else {
+    //                 to.constant = Some(c_from);
+    //             }
+    //         }
+    //         true
+    //     }
+    // }
+
+    fn merge(&self, to: &mut Data, from: Data) -> Option<Ordering> {
+        let before_len = to.free.len();
+        // to.free.extend(from.free);
+        to.free.retain(|i| from.free.contains(i));
+        let did_change = before_len != to.free.len();
+        if to.constant.is_none() && from.constant.is_some() {
+            to.constant = from.constant;
+            None
+        } else if did_change {
+            None
+        } else {
+            Some(Ordering::Greater)
         }
     }
 

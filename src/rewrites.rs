@@ -269,6 +269,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             // open term rules
             rw!("add-comm";  "(+ ?a ?b)"        <=> "(+ ?b ?a)"),
             rw!("add-assoc"; "(+ (+ ?a ?b) ?c)" <=> "(+ ?a (+ ?b ?c))"),
+            rw!("mul-I-idem";  "(* (I ?a) (I ?a))"        <=> "(I ?a)"),
             rw!("mul-comm";  "(* ?a ?b)"        <=> "(* ?b ?a)"),
             rw!("mul-assoc"; "(* (* ?a ?b) ?c)" <=> "(* ?a (* ?b ?c))"),
             rw!("eq-comm";   "(= ?a ?b)"        <=> "(= ?b ?a)"),
