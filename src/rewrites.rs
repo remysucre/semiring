@@ -9,13 +9,15 @@ fn var(s: &str) -> Var {
 }
 
 fn is_not_same_var(v1: Var, v2: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
-    move |egraph, _, subst| egraph.find(subst[v1]) != egraph.find(subst[v2])
+    move |egraph, id, subst| is_var(v2)(egraph, id, subst)
+        && egraph.find(subst[v1]) != egraph.find(subst[v2])
 }
 
 fn free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| {
-        let v = egraph[subst[x]].data.free.iter().next().unwrap();
-        egraph[subst[b]].data.free.contains(&v)
+        if let Some(v) = egraph[subst[x]].data.free.iter().next() {
+            egraph[subst[b]].data.free.contains(&v)
+        } else { true } // TODO should this be true?
     }
 }
 
@@ -26,6 +28,10 @@ fn not_free(x: Var, b: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
 
 fn is_const(v: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
     move |egraph, _, subst| egraph[subst[v]].data.constant.is_some()
+}
+
+fn is_var(v: Var) -> impl Fn(&mut EGraph, Id, &Subst) -> bool {
+    move |egraph, _, subst| !egraph[subst[v]].data.free.is_empty()
 }
 
 // Check for patterns (debugging)
@@ -243,6 +249,7 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         rw!("let-var-same"; "(let ?v1 ?e ?v1)" => "?e"),
         rw!("let-var-diff"; "(let ?v1 ?e ?v2)" => "?v2"
             if is_not_same_var(var("?v1"), var("?v2"))),
+        rw!("elim-sum-0"; "(sum 0 ?e)" => "?e"),
         rw!("swap-sum"; "(sum ?x (sum ?y ?e))" => "(sum ?y (sum ?x ?e))"),
         rw!("pushdown-sum-free";
             "(* ?b (sum ?x ?a))" =>

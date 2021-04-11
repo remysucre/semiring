@@ -63,12 +63,16 @@ impl Analysis<Semiring> for SemiringAnalysis {
             Semiring::Let([v, a, b]) => {
                 free.extend(fvs(b));
                 // NOTE only do this if v free in b?
-                free.remove(&fvs(v).next().unwrap());
+                if let Some(v) = fvs(v).next() {
+                    free.remove(&v);
+                }
                 free.extend(fvs(a));
             }
             Semiring::Sum([v, a]) => {
                 free.extend(fvs(a));
-                free.remove(&fvs(v).next().unwrap());
+                if let Some(v) = fvs(v).next() {
+                    free.remove(&v);
+                }
             }
             Semiring::Rel(xs) =>
                 for x in xs[1..].iter() {
