@@ -235,7 +235,7 @@ pub fn normalize() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
             "(let ?v ?e (= ?a ?b))",
             "(= (let ?v ?e ?a) (let ?v ?e ?b))",
         ),
-        rw_1("div", "(/ ?a ?b)", "(* ?a (inv ?b))"),
+        rw_1("div", "(div ?a ?b)", "(* ?a (inv ?b))"),
         // rw_1("subtract" , "(- ?a ?b)", "(+ ?a (* -1 ?b))"),
     ]
 }
