@@ -287,5 +287,10 @@ pub fn rules() -> Vec<Rewrite<Semiring, SemiringAnalysis>> {
         ]
         .concat(),
     );
+    rs.extend(vec![
+        rw!("trivial"   ; "(sum ?w (* ?w (I (= ?x ?w))))"          => "?x"),
+        rw!("weight"    ; "(sum ?w (* ?w (I (rel E ?x ?y ?w))))"     => "(weight ?w ?x ?y)"),
+        rw!("S"    ; "(sum ?w (* ?w (I (rel R ?x ?y ?w))))"     => "(S ?x ?y)"),
+    ]);
     rs
 }

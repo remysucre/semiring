@@ -40,20 +40,40 @@ fn main() {
         let (_, best) = extractor.find_best(root);
         println!("{}", best.pretty(40));
     } else {
-        let mut start = String::new();
-        io::stdin().read_to_string(&mut start).unwrap();
+        // (sum w (* (r x z w) w))
+        //
+        // (+ (I (rel E x z w)) (sum y (sum w1 (sum w2 (* (* (r x y w1) (r y z w2)) (I (= w (* w1 w2))))))))
+        // let start = "(sum w (* (+ (I (rel E x z w)) (sum y (sum w1 (sum w2 (* (* (I (rel R x y w1)) (I (rel R y z w2))) (I (= w (* w1 w2)))))))) w))";
+        let start = "(sum w (* (+ (I (rel E x z w)) (sum y (sum w1 (sum w2 (* (* (I (rel R x y w1)) (I (rel R y z w2))) (I (= w (* w1 w2)))))))) w))";
         let runner = Runner::default()
             .with_expr(&start.parse().unwrap())
-            .run(&elim_sums());
+            .run(&rules());
         let (egraph, root) = (runner.egraph, runner.roots[0]);
 
-        let mut extractor = Extractor::new(&egraph, VarCost);
+        let mut extractor = Extractor::new(&egraph, GCost);
         let (_, best) = extractor.find_best(root);
 
-        let normalize_runner = Runner::default().with_expr(&best).run(&normalize());
-        let (egraph, root) = (normalize_runner.egraph, normalize_runner.roots[0]);
-        let mut extractor = Extractor::new(&egraph, AstSize);
-        let (_, best) = extractor.find_best(root);
+        // let normalize_runner = Runner::default().with_expr(&best).run(&normalize());
+        // let (egraph, root) = (normalize_runner.egraph, normalize_runner.roots[0]);
+        // let mut extractor = Extractor::new(&egraph, AstSize);
+        // let (_, best) = extractor.find_best(root);
         println!("{}", best.pretty(40));
     }
+    // {
+    //     let mut start = String::new();
+    //     io::stdin().read_to_string(&mut start).unwrap();
+    //     let runner = Runner::default()
+    //         .with_expr(&start.parse().unwrap())
+    //         .run(&elim_sums());
+    //     let (egraph, root) = (runner.egraph, runner.roots[0]);
+
+    //     let mut extractor = Extractor::new(&egraph, VarCost);
+    //     let (_, best) = extractor.find_best(root);
+
+    //     let normalize_runner = Runner::default().with_expr(&best).run(&normalize());
+    //     let (egraph, root) = (normalize_runner.egraph, normalize_runner.roots[0]);
+    //     let mut extractor = Extractor::new(&egraph, AstSize);
+    //     let (_, best) = extractor.find_best(root);
+    //     println!("{}", best.pretty(40));
+    // }
 }
